@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Image, Platform, View } from "react-native";
+import { ActivityIndicator, Image, Platform, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,6 +12,7 @@ import { Text } from "@/components/ui/text";
 
 import { FacebookIcon } from "@/components/icons/facebook.icon";
 import { GoogleIcon } from "@/components/icons/google-icon";
+import { api } from "@/src/services/api";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -20,12 +21,11 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [hasError, setHasError] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Consideramos válido se tiver exatamente 11 dígitos numéricos
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  // Gerencia o clique no botão "Enter"
-  const handleLoginPress = () => {
+  const handleLoginPress = async () => {
     if (!isEmailValid) {
       setHasError(true);
       setShowToast(true);
@@ -33,7 +33,20 @@ export default function LoginScreen() {
       return;
     }
 
-    router.push(`/(auth)/otp?email=${email}`);
+    setIsLoading(true);
+    try {
+      // Chama o nosso C# rodando no Arch Linux!
+      await api.post("/auth/send-otp", { email });
+
+      // Passa o e-mail via parâmetro para a tela de OTP
+      router.push(`/(auth)/otp?email=${email}`);
+    } catch (error) {
+      console.error("Erro na API:", error);
+      setHasError(true);
+      //TODO: um toast de erro de servidor futuramente
+    } finally {
+      setIsLoading(false); // Libera o botão
+    }
   };
 
   return (
@@ -41,7 +54,7 @@ export default function LoginScreen() {
       {showToast && (
         <View
           className="absolute left-6 right-6 bg-red-500 rounded-2xl p-4 shadow-lg z-50 flex-row items-center"
-          style={{ top: insets.top + 16 }} // Respeita o notch do iPhone
+          style={{ top: insets.top + 16 }}
         >
           <Text className="text-white font-bold text-base">
             ⚠️ Digite um e-mail válido para continuar.
@@ -97,6 +110,7 @@ export default function LoginScreen() {
           />
 
           <Button
+            disabled={!isEmailValid || isLoading}
             className={`w-full rounded-full mt-8 ${
               isEmailValid
                 ? "bg-emerald-600 active:bg-emerald-700"
@@ -104,7 +118,11 @@ export default function LoginScreen() {
             }`}
             onPress={handleLoginPress}
           >
-            <Text className="text-lg font-bold text-white">Enter</Text>
+            {isLoading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-lg font-bold text-white">Enter</Text>
+            )}
           </Button>
         </View>
       </KeyboardAwareScrollView>
