@@ -1,16 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using ReUse.Api.Data;
 using ReUse.Api.Models;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace ReUse.Api.Services;
 
 public class AuthService
 {
     private readonly AppDbContext _context;
+    private readonly IConfiguration _config; 
 
-    public AuthService(AppDbContext context)
+    public AuthService(AppDbContext context, IConfiguration config)
     {
         _context = context;
+        _config = config;
     }
 
     public async Task<bool> GenerateAndSendOtpAsync(string email)
@@ -48,18 +54,14 @@ public class AuthService
 
     public async Task<string?> VerifyOtpAsync(string email, string code)
     {
-        // Busca o código no banco
         var otp = await _context.OtpCodes
             .FirstOrDefaultAsync(o => o.Email == email && o.Code == code && !o.IsUsed);
 
-        // Validações de segurança
         if (otp == null || otp.ExpiresAt < DateTime.UtcNow)
-            return null; // Retorna nulo se for inválido ou expirado
+            return null; 
 
-        // Marca como usado para não ser reutilizado
         otp.IsUsed = true;
 
-        // Verifica se é um usuário novo ou antigo
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
         {
@@ -69,7 +71,37 @@ public class AuthService
 
         await _context.SaveChangesAsync();
 
-        // TODO: Na próxima etapa vamos gerar o JWT real aqui
-        return "fake-jwt-token-temporario"; 
+        // Chamamos o gerador de Token 
+        return GenerateJwtToken(user); 
+    }
+    
+    private string GenerateJwtToken(User user)
+    {
+        var jwtSettings = _config.GetSection("JwtSettings");
+        var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Secret"]!);
+
+        // As "Claims" são as informações públicas que ficam dentro do Token
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim("AuthProvider", user.AuthProvider)
+        };
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddDays(double.Parse(jwtSettings["ExpirationInDays"]!)),
+            Issuer = jwtSettings["Issuer"],
+            Audience = jwtSettings["Audience"],
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(secretKey), 
+                SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+
+        return tokenHandler.WriteToken(token); // Retorna a string do Token ("ey...")
     }
 }

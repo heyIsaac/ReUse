@@ -6,6 +6,7 @@
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/ReUse.Api.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/ReUse.Api.pdb
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Humanizer.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.Bcl.AsyncInterfaces.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.CodeAnalysis.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.CodeAnalysis.CSharp.dll
@@ -22,6 +23,12 @@
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.Extensions.Logging.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.Extensions.Logging.Abstractions.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.Extensions.Options.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Abstractions.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Logging.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Microsoft.OpenApi.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Mono.TextTemplating.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/Npgsql.dll
@@ -35,6 +42,7 @@
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/System.Composition.Hosting.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/System.Composition.Runtime.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/System.Composition.TypedParts.dll
+/home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/cs/Microsoft.CodeAnalysis.resources.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/de/Microsoft.CodeAnalysis.resources.dll
 /home/sallein/ReUse/api/ReUse.Api/bin/Debug/net8.0/es/Microsoft.CodeAnalysis.resources.dll
