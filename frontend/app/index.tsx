@@ -1,38 +1,60 @@
 import { useRouter } from "expo-router";
-import { Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { ChevronRight } from "lucide-react-native";
+import React from "react";
+import { Image, TouchableOpacity, View } from "react-native";
+// Importante para garantir que os elementos respeitem o Notch/Barra do home
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function WelcomeScreen() {
+export default function OnboardingScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    // SafeAreaView garante que o conteúdo não bata no notch da câmera ou barra de gestos
-    // O flex-1 estica a view para ocupar tudo, e o fundo preenche o edge-to-edge
-    <SafeAreaView className="flex-1 items-center justify-between bg-white px-6 py-8 dark:bg-zinc-950">
-      {/* Espaço em branco no topo para empurrar o conteúdo para o centro */}
-      <View className="flex-1 items-center justify-center">
-        {/* Título do App */}
-        <Text className="mb-4 text-5xl font-extrabold text-emerald-600 dark:text-emerald-400">
-          ReUse!
-        </Text>
+    <View className="flex-1 bg-emerald-500">
+      <StatusBar style="light" />
 
-        {/* Subtítulo baseado na visão da Clara */}
-        <Text className="text-center text-lg leading-7 text-zinc-600 dark:text-zinc-400">
-          Dê uma nova história para seus objetos. Conecte-se com sua comunidade
-          e transforme hábitos de consumo.
-        </Text>
-      </View>
+      <Image
+        source={require("../src/assets/images/background-onboarding.png")}
+        className="absolute -left-10 bottom-0 w-full"
+        resizeMode="contain"
+        accessible={false}
+        importantForAccessibility="no"
+      />
 
-      {/* Botão */}
-      <View className="w-full gap-4 pb-4">
-        <TouchableOpacity
-          activeOpacity={0.8}
-          className="w-full items-center rounded-2xl bg-emerald-600 py-4 shadow-sm active:bg-emerald-700 dark:bg-emerald-500"
-          onPress={() => router.push("/(auth)/login")}
+      {/* Container Principal */}
+      <View className="flex-1">
+        <View
+          className="absolute bg-white rounded-full items-center justify-center shadow-2xl"
+          style={{
+            width: 200,
+            height: 200,
+
+            bottom: -insets.bottom - 40,
+            right: -30,
+          }}
         >
-          <Text className="text-lg font-bold text-white">Começar Agora</Text>
-        </TouchableOpacity>
+          {/* O seu Botão Verde (Agora *dentro* da Ellipse Branca) */}
+          {/* Centralizamos ele visivelmente dentro da View branca de 380x380 */}
+          <View
+            className="absolute"
+            // Ajustamos a posição interna para alinhar perfeitamente com o design
+            style={{
+              bottom: 65 + insets.bottom, // Sobe baseado no safe area interno
+              right: 70, // Empurra para a esquerda do centro do círculo gigante
+            }}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/(auth)/login")}
+              // Mantivemos o seu estilo original do botão verde
+              className="w-20 h-20 rounded-full bg-emerald-600 items-center justify-center active:bg-emerald-700"
+            >
+              <ChevronRight color="white" size={32} strokeWidth={2.5} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
