@@ -5,8 +5,6 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
-using System.Net;
-using System.Net.Mail;
 
 namespace ReUse.Api.Services;
 
@@ -21,7 +19,8 @@ public class AuthService
         _config = config;
     }
 
-    public async Task<bool> GenerateAndSendOtpAsync(string email)
+    // MUDANÇA AQUI: Trocamos o Task<bool> por Task<string>
+    public async Task<string> GenerateAndSendOtpAsync(string email)
     {
         // Invalida qualquer código antigo desse usuário para evitar fraudes
         var oldOtps = await _context.OtpCodes
@@ -45,54 +44,8 @@ public class AuthService
         _context.OtpCodes.Add(otp);
         await _context.SaveChangesAsync();
         
-       try 
-        {
-            var senderEmail = _config["Smtp:Email"];
-            var senderPassword = _config["Smtp:Password"];
-
-            // Configura o "carteiro" do Google
-           using var smtpClient = new SmtpClient("smtp.gmail.com")
-            {
-                Port = 587,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(senderEmail, senderPassword),
-                EnableSsl = true, 
-            };
-
-            // Monta a carta
-            var mailMessage = new MailMessage
-            {
-                From = new MailAddress(senderEmail!, "ReUse App"),
-                Subject = "Seu código de acesso ReUse! ♻️",
-                Body = $@"
-                    <div style='font-family: sans-serif; padding: 20px; text-align: center; background-color: #f4f4f5; border-radius: 10px;'>
-                        <h2 style='color: #18181b;'>Bem-vindo ao ReUse! 🌱</h2>
-                        <p style='color: #52525b; font-size: 16px;'>Use o código abaixo para entrar no aplicativo:</p>
-                        <div style='margin: 20px auto; padding: 15px; background-color: #ffffff; border: 2px solid #10b981; border-radius: 8px; display: inline-block;'>
-                            <strong style='font-size: 32px; color: #059669; letter-spacing: 5px;'>{code}</strong>
-                        </div>
-                        <p style='color: #71717a; font-size: 14px;'>Este código expira em 5 minutos.</p>
-                    </div>",
-                IsBodyHtml = true,
-            };
-            
-            // Destinatário (Pode ser qualquer e-mail do mundo!)
-            mailMessage.To.Add(email);
-
-            // Envia o e-mail de forma assíncrona
-            await smtpClient.SendMailAsync(mailMessage);
-            
-            Console.WriteLine($"✅ E-mail enviado com sucesso via Gmail para {email}!");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Falha crítica SMTP: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                Console.WriteLine($"Detalhe do Erro (Inner): {ex.InnerException.Message}");
-            }
-        }
-        return true;
+        // Retorna o código diretamente para o Controller repassar ao React Native
+        return code;
     }
 
     public async Task<string?> VerifyOtpAsync(string email, string code)
@@ -145,6 +98,6 @@ public class AuthService
         var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
 
-        return tokenHandler.WriteToken(token); // Retorna a string do Token ("ey...")
+        return tokenHandler.WriteToken(token);
     }
 }
