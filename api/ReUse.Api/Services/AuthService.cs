@@ -5,6 +5,8 @@ using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Net;
+using System.Net.Mail;
 
 namespace ReUse.Api.Services;
 
@@ -43,37 +45,47 @@ public class AuthService
         _context.OtpCodes.Add(otp);
         await _context.SaveChangesAsync();
         
-        try 
+       try 
         {
-            using var client = new HttpClient();
-            var apiKey = _config["Resend:ApiKey"];
-            
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-            
-            // O Resend permite testar usando este e-mail de remetente oficial deles
-            var jsonPayload = $@"{{
-                ""from"": ""ReUse App <onboarding@resend.dev>"",
-                ""to"": [""{email}""],
-                ""subject"": ""Seu código de acesso ReUse!"",
-                ""html"": ""<div style='font-family: sans-serif; padding: 20px;'><h2>Bem-vindo ao ReUse! 🌱</h2><p>Seu código de verificação é: <strong><span style='font-size: 24px; color: #059669;'>{code}</span></strong></p><p>Este código expira em 5 minutos.</p></div>""
-            }}";
+            var senderEmail = _config["Smtp:Email"];
+            var senderPassword = _config["Smtp:Password"];
 
-            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync("https://api.resend.com/emails", content);
+            // Configura o "carteiro" do Google
+            using var smtpClient = new SmtpClient("smtp.gmail.com")
+            {
+                Port = 587,
+                Credentials = new NetworkCredential(senderEmail, senderPassword),
+                EnableSsl = true, // Exigência de segurança do Google
+            };
 
-            if (!response.IsSuccessStatusCode)
+            // Monta a carta
+            var mailMessage = new MailMessage
             {
-                var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Erro ao enviar e-mail: {error}");
-            }
-            else
-            {
-                Console.WriteLine($"✅ E-mail real enviado com sucesso para {email}!");
-            }
+                From = new MailAddress(senderEmail!, "ReUse App"),
+                Subject = "Seu código de acesso ReUse! ♻️",
+                Body = $@"
+                    <div style='font-family: sans-serif; padding: 20px; text-align: center; background-color: #f4f4f5; border-radius: 10px;'>
+                        <h2 style='color: #18181b;'>Bem-vindo ao ReUse! 🌱</h2>
+                        <p style='color: #52525b; font-size: 16px;'>Use o código abaixo para entrar no aplicativo:</p>
+                        <div style='margin: 20px auto; padding: 15px; background-color: #ffffff; border: 2px solid #10b981; border-radius: 8px; display: inline-block;'>
+                            <strong style='font-size: 32px; color: #059669; letter-spacing: 5px;'>{code}</strong>
+                        </div>
+                        <p style='color: #71717a; font-size: 14px;'>Este código expira em 5 minutos.</p>
+                    </div>",
+                IsBodyHtml = true,
+            };
+            
+            // Destinatário (Pode ser qualquer e-mail do mundo!)
+            mailMessage.To.Add(email);
+
+            // Envia o e-mail de forma assíncrona
+            await smtpClient.SendMailAsync(mailMessage);
+            
+            Console.WriteLine($"✅ E-mail enviado com sucesso via Gmail para {email}!");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Falha crítica ao tentar enviar e-mail: {ex.Message}");
+            Console.WriteLine($"Falha crítica ao tentar enviar e-mail via SMTP: {ex.Message}");
         }
 
         return true;
