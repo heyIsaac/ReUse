@@ -1,3 +1,46 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Tokens para o Modo Claro (Light Mode) */
+  :root {
+    /* Cores de Fundo (Backgrounds) */
+    --background: 0 0% 100%; /* Branco */
+    --card: 240 5% 96%; /* zinc-100 */
+
+    /* Textos */
+    --foreground: 240 10% 4%; /* zinc-950 */
+    --muted-foreground: 240 5% 45%; /* zinc-500 */
+
+    /* Cores da Marca e Ações (Eco-Vibrante) */
+    --primary: 161 93% 30%; /* emerald-600 */
+    --primary-foreground: 0 0% 100%; /* Branco */
+
+    /* Cores de Sotaque (Gamificação/Atenção) */
+    --accent-orange: 38 92% 50%; /* amber-500 */
+    --accent-purple: 231 48% 48%; /* indigo-500 */
+    --accent-rose: 343 93% 71%; /* rose-400 */
+
+    /* Bordas e Divisores */
+    --border: 240 6% 90%; /* zinc-200 */
+  }
+
+  /* Tokens para o Modo Escuro (Dark Mode) */
+  .dark {
+    --background: 240 10% 4%; /* zinc-950 */
+    --card: 240 6% 10%; /* zinc-900 */
+
+    --foreground: 0 0% 98%; /* zinc-50 */
+    --muted-foreground: 240 5% 65%; /* zinc-400 */
+
+    --primary: 160 84% 39%; /* emerald-500 */
+    --primary-foreground: 240 10% 4%; /* zinc-950 */
+
+    --accent-orange: 43 96% 56%; /* amber-400 */
+    --accent-purple: 235 86% 65%; /* indigo-400 */
+    --accent-rose: 346 87% 60%; /* rose-500 */
+
+    --border: 240 4% 16%; /* zinc-800 */
+  }
+}
