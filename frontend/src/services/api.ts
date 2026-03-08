@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-const BASE_URL = "http://localhost:5251/api";
+const BASE_URL = "https://reuse-9fal.onrender.com/api";
 
 export const api = axios.create({
   baseURL: BASE_URL,
