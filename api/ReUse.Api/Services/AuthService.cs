@@ -42,12 +42,39 @@ public class AuthService
 
         _context.OtpCodes.Add(otp);
         await _context.SaveChangesAsync();
+        
+        try 
+        {
+            using var client = new HttpClient();
+            var apiKey = _config["Resend:ApiKey"];
+            
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            
+            // O Resend permite testar usando este e-mail de remetente oficial deles
+            var jsonPayload = $@"{{
+                ""from"": ""ReUse App <onboarding@resend.dev>"",
+                ""to"": [""{email}""],
+                ""subject"": ""Seu código de acesso ReUse!"",
+                ""html"": ""<div style='font-family: sans-serif; padding: 20px;'><h2>Bem-vindo ao ReUse! 🌱</h2><p>Seu código de verificação é: <strong><span style='font-size: 24px; color: #059669;'>{code}</span></strong></p><p>Este código expira em 5 minutos.</p></div>""
+            }}";
 
-        // MOCK: Imprime no terminal em vez de gastar cota de e-mail agora
-        Console.WriteLine("\n=============================================");
-        Console.WriteLine($"📧 SIMULAÇÃO DE E-MAIL PARA: {email}");
-        Console.WriteLine($"🔑 SEU CÓDIGO REUSE É: {code}");
-        Console.WriteLine("=============================================\n");
+            var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("https://api.resend.com/emails", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Erro ao enviar e-mail: {error}");
+            }
+            else
+            {
+                Console.WriteLine($"✅ E-mail real enviado com sucesso para {email}!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Falha crítica ao tentar enviar e-mail: {ex.Message}");
+        }
 
         return true;
     }
