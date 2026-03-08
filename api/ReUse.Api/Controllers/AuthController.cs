@@ -19,10 +19,11 @@ public class AuthController : ControllerBase
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
     {
-        await _authService.GenerateAndSendOtpAsync(request.Email);
-        return Ok(new { Message = "Código enviado com sucesso. Olhe o terminal!" });
+        var generatedCode = await _authService.GenerateAndSendOtpAsync(request.Email);
+        
+        return Ok(new { message = "Código gerado com sucesso", code = generatedCode });
     }
-
+    
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
     {
