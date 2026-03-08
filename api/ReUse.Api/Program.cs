@@ -56,4 +56,20 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        
+        context.Database.Migrate(); 
+        Console.WriteLine("Banco de dados atualizado com sucesso!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro ao criar as tabelas no banco: {ex.Message}");
+    }
+}
+
 app.Run();
