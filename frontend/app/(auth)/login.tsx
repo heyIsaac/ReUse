@@ -42,6 +42,13 @@ export default function LoginScreen() {
       // 2. Pega o código que o C# devolveu
       const generatedCode = response.data.code;
 
+      console.log("🔎 VERIFICANDO CHAVES DO .ENV:");
+      console.log("Service ID:", process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID);
+      console.log("Template ID:", process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID);
+      console.log("Public Key:", process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY);
+
+      console.log(generatedCode);
+
       await axios.post("https://api.emailjs.com/api/v1.0/email/send", {
         service_id: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID,
         template_id: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID,
@@ -94,7 +101,7 @@ export default function LoginScreen() {
           style={{ paddingBottom: Math.max(insets.bottom + 16, 32) }}
         >
           <Text variant="h1" className="text-left mb-8 text-zinc-900">
-            Login.
+            Login
           </Text>
 
           <View className="flex-row gap-4 w-full">
