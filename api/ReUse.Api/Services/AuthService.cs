@@ -51,11 +51,12 @@ public class AuthService
             var senderPassword = _config["Smtp:Password"];
 
             // Configura o "carteiro" do Google
-            using var smtpClient = new SmtpClient("smtp.gmail.com")
+           using var smtpClient = new SmtpClient("smtp.gmail.com")
             {
                 Port = 587,
+                UseDefaultCredentials = false,
                 Credentials = new NetworkCredential(senderEmail, senderPassword),
-                EnableSsl = true, // Exigência de segurança do Google
+                EnableSsl = true, 
             };
 
             // Monta a carta
@@ -85,9 +86,12 @@ public class AuthService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Falha crítica ao tentar enviar e-mail via SMTP: {ex.Message}");
+            Console.WriteLine($"Falha crítica SMTP: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Detalhe do Erro (Inner): {ex.InnerException.Message}");
+            }
         }
-
         return true;
     }
 
