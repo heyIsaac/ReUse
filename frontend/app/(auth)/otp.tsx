@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { api } from "@/src/services/api"; // Nossa API
+import { StatusBar } from "expo-status-bar";
 import { ChevronLeft } from "lucide-react-native";
 
 const CODE_LENGTH = 6;
@@ -66,6 +67,7 @@ export default function OtpScreen() {
 
   return (
     <View className="flex-1 bg-white">
+      <StatusBar style="dark" backgroundColor="#ffffff" />
       <KeyboardAwareScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         enableOnAndroid={true}
