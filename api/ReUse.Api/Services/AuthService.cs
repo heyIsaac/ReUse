@@ -71,83 +71,117 @@ public class AuthService
 
     // ─── Google OAuth ────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Valida o idToken emitido pelo Google, cria/atualiza o usuário no banco
-    /// e retorna um JWT interno do app.
-    /// </summary>
-    public async Task<string?> GoogleSignInAsync(string idToken)
+    /// Valida o token do Google (idToken ou accessToken), cria/atualiza o usuário
+    /// no banco e retorna um JWT interno do app.
+    public async Task<string?> GoogleSignInAsync(string? idToken, string? accessToken)
     {
-        // 1. Valida o idToken com a API pública do Google (não requer chave secreta)
-        var url = $"https://oauth2.googleapis.com/tokeninfo?id_token={Uri.EscapeDataString(idToken)}";
-        HttpResponseMessage response;
-        try
+        string? email = null;
+        string? name = null;
+        string? picture = null;
+
+        if (!string.IsNullOrEmpty(idToken))
         {
-            response = await _httpClient.GetAsync(url);
+            // Caminho 1: valida via tokeninfo (mais seguro — verifica assinatura do token)
+            var result = await ValidateIdTokenAsync(idToken);
+            if (result == null) return null;
+            (email, name, picture) = result.Value;
         }
-        catch (Exception ex)
+        else if (!string.IsNullOrEmpty(accessToken))
         {
-            Console.WriteLine($"[Google] Erro ao chamar tokeninfo: {ex.Message}");
+            // Caminho 2: usa o access_token para buscar os dados do usuário via userinfo
+            var result = await GetUserInfoWithAccessTokenAsync(accessToken);
+            if (result == null) return null;
+            (email, name, picture) = result.Value;
+        }
+        else
+        {
+            Console.WriteLine("[Google] Nenhum token fornecido.");
             return null;
         }
 
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"[Google] tokeninfo retornou status: {response.StatusCode}");
-            return null;
-        }
-
-        var json = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        // 2. Verifica se o token foi emitido para o nosso app
-        var googleSettings = _config.GetSection("Google");
-        var webClientId = googleSettings["WebClientId"];
-        var androidClientId = googleSettings["AndroidClientId"];
-
-        var aud = root.TryGetProperty("aud", out var audProp) ? audProp.GetString() : null;
-        if (aud == null || (aud != webClientId && aud != androidClientId))
-        {
-            Console.WriteLine($"[Google] Audience inválido: {aud}");
-            return null;
-        }
-
-        // 3. Extrai os dados do usuário
-        var email = root.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
         if (string.IsNullOrEmpty(email))
         {
-            Console.WriteLine("[Google] E-mail não encontrado no token.");
+            Console.WriteLine("[Google] E-mail não encontrado.");
             return null;
         }
 
-        var name = root.TryGetProperty("name", out var nameProp) ? nameProp.GetString() : null;
-        var picture = root.TryGetProperty("picture", out var pictureProp) ? pictureProp.GetString() : null;
-
-        // 4. Cria ou atualiza o usuário no banco
+        // Cria ou atualiza o usuário no banco
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
         {
-            user = new User
-            {
-                Email = email,
-                Name = name,
-                ProfilePictureUrl = picture,
-                AuthProvider = "Google"
-            };
+            user = new User { Email = email, Name = name, ProfilePictureUrl = picture, AuthProvider = "Google" };
             _context.Users.Add(user);
         }
         else
         {
-            // Atualiza nome/foto se vieram do Google
             if (!string.IsNullOrEmpty(name)) user.Name = name;
             if (!string.IsNullOrEmpty(picture)) user.ProfilePictureUrl = picture;
             user.AuthProvider = "Google";
         }
 
         await _context.SaveChangesAsync();
-
         return GenerateJwtToken(user);
     }
+
+    private async Task<(string Email, string? Name, string? Picture)?> ValidateIdTokenAsync(string idToken)
+    {
+        var url = $"https://oauth2.googleapis.com/tokeninfo?id_token={Uri.EscapeDataString(idToken)}";
+        HttpResponseMessage response;
+        try { response = await _httpClient.GetAsync(url); }
+        catch (Exception ex) { Console.WriteLine($"[Google] Erro tokeninfo: {ex.Message}"); return null; }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"[Google] tokeninfo status: {response.StatusCode}");
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = doc.RootElement;
+
+        var googleSettings = _config.GetSection("Google");
+        var aud = root.TryGetProperty("aud", out var audProp) ? audProp.GetString() : null;
+        var webClientId = googleSettings["WebClientId"];
+        var androidClientId = googleSettings["AndroidClientId"];
+
+        if (aud == null || (aud != webClientId && aud != androidClientId))
+        {
+            Console.WriteLine($"[Google] Audience inválido: {aud}");
+            return null;
+        }
+
+        var email = root.TryGetProperty("email", out var e) ? e.GetString() : null;
+        var name = root.TryGetProperty("name", out var n) ? n.GetString() : null;
+        var picture = root.TryGetProperty("picture", out var p) ? p.GetString() : null;
+
+        return string.IsNullOrEmpty(email) ? null : (email!, name, picture);
+    }
+
+    private async Task<(string Email, string? Name, string? Picture)?> GetUserInfoWithAccessTokenAsync(string accessToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "https://openidconnect.googleapis.com/v1/userinfo");
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+        HttpResponseMessage response;
+        try { response = await _httpClient.SendAsync(request); }
+        catch (Exception ex) { Console.WriteLine($"[Google] Erro userinfo: {ex.Message}"); return null; }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"[Google] userinfo status: {response.StatusCode}");
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = doc.RootElement;
+
+        var email = root.TryGetProperty("email", out var e) ? e.GetString() : null;
+        var name = root.TryGetProperty("name", out var n) ? n.GetString() : null;
+        var picture = root.TryGetProperty("picture", out var p) ? p.GetString() : null;
+
+        return string.IsNullOrEmpty(email) ? null : (email!, name, picture);
+    }
+
 
     // ─── JWT ─────────────────────────────────────────────────────────────────
 

@@ -38,16 +38,14 @@ public class AuthController : ControllerBase
     [HttpPost("google-signin")]
     public async Task<IActionResult> GoogleSignIn([FromBody] GoogleSignInRequest request)
     {
-        if (string.IsNullOrEmpty(request.IdToken))
-            return BadRequest(new { Message = "idToken é obrigatório." });
+        if (string.IsNullOrEmpty(request.IdToken) && string.IsNullOrEmpty(request.AccessToken))
+            return BadRequest(new { Message = "idToken ou accessToken são obrigatórios." });
 
-        var token = await _authService.GoogleSignInAsync(request.IdToken);
+        var token = await _authService.GoogleSignInAsync(request.IdToken, request.AccessToken);
 
         if (token == null)
             return Unauthorized(new { Message = "Token do Google inválido ou expirado." });
 
-        // O e-mail virá do token validado — aqui retornamos apenas o JWT interno
-        // O cliente React Native pode decodificar o JWT para ler o e-mail se precisar
         return Ok(new { Token = token });
     }
 }
