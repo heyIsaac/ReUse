@@ -13,6 +13,7 @@ import { Text } from "@/components/ui/text";
 import { FacebookIcon } from "@/components/icons/facebook.icon";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { api } from "@/src/services/api";
+import { useGoogleAuth } from "@/src/hooks/useGoogleAuth";
 import axios from "axios";
 
 export default function LoginScreen() {
@@ -23,6 +24,13 @@ export default function LoginScreen() {
   const [hasError, setHasError] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    signInWithGoogle,
+    isLoading: isGoogleLoading,
+    error: googleError,
+    isReady: isGoogleReady,
+  } = useGoogleAuth();
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -108,7 +116,9 @@ export default function LoginScreen() {
             <SocialAuthButton
               icon={<GoogleIcon />}
               label="Google"
-              onPress={() => console.log("Google")}
+              onPress={signInWithGoogle}
+              disabled={!isGoogleReady || isGoogleLoading}
+              isLoading={isGoogleLoading}
             />
             <SocialAuthButton
               icon={<FacebookIcon />}
