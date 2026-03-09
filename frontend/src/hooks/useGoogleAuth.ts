@@ -1,81 +1,102 @@
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import { useEffect, useState } from "react";
+import {
+  GoogleSignin,
+  GoogleSigninButton,
+  statusCodes,
+  isErrorWithCode,
+  isSuccessResponse,
+} from "@react-native-google-signin/google-signin";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { api } from "@/src/services/api";
 
-// Fecha o browser de auth automaticamente após redirect
-WebBrowser.maybeCompleteAuthSession();
+// Configura o Google Sign-In uma única vez quando o módulo é carregado.
+// webClientId é o ID do seu credential do tipo "Web Application" no Google Cloud Console.
+// É necessário para que o Google retorne o idToken no login nativo Android.
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  scopes: ["profile", "email"],
+});
 
 export function useGoogleAuth() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    // AndroidClientId deve ser de um credential do tipo "Android" no Google Cloud Console.
-    // Ele usa o reverse-client-id scheme como redirect, que o Google aceita nativamente.
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    // webClientId é necessário para que o id_token seja incluído na resposta
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    scopes: ["openid", "profile", "email"],
-  });
-
-  useEffect(() => {
-    if (response?.type === "success") {
-      console.log("✅ [Google Auth] Resposta do Google:", response.params);
-
-      // O id_token pode vir direto nos params (implicit flow)
-      // ou no authentication.idToken (code flow com troca automática)
-      const idToken =
-        response.params?.id_token ??
-        (response as any).authentication?.idToken;
-
-      if (idToken) {
-        handleBackendSignIn(idToken);
-      } else {
-        console.error("[Google Auth] id_token não encontrado nos params:", response.params);
-        setError("Não foi possível obter o token de autenticação do Google.");
-      }
-    } else if (response?.type === "error") {
-      console.error("[Google Auth] Erro OAuth:", response.error);
-      setError(response.error?.message ?? "Erro no login com Google.");
-    } else if (response?.type === "dismiss" || response?.type === "cancel") {
-      console.log("[Google Auth] Login cancelado pelo usuário.");
-    }
-  }, [response]);
-
-  const handleBackendSignIn = async (idToken: string) => {
-    setIsLoading(true);
+  const signInWithGoogle = async () => {
     setError(null);
+    setIsLoading(true);
+
     try {
+      // 1. Verifica se o Google Play Services está disponível no dispositivo
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+      // 2. Abre o seletor de conta nativo do Google (sem browser, sem redirect URI)
+      const response = await GoogleSignin.signIn();
+
+      if (!isSuccessResponse(response)) {
+        // Usuário cancelou
+        console.log("[Google Auth] Login cancelado pelo usuário.");
+        setIsLoading(false);
+        return;
+      }
+
+      const { idToken } = response.data;
+      console.log("[Google Auth] ✅ idToken obtido:", idToken ? "SIM" : "NÃO");
+
+      if (!idToken) {
+        setError("Não foi possível obter o idToken do Google.");
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Envia o idToken para o backend C# validar e gerar o JWT interno do app
       const res = await api.post<{ token: string }>("/auth/google-signin", {
         idToken,
       });
 
-      const { token } = res.data;
-      await SecureStore.setItemAsync("reuse_jwt_token", token);
+      // 4. Salva o JWT no SecureStore (mesmo mecanismo do login por e-mail/OTP)
+      await SecureStore.setItemAsync("reuse_jwt_token", res.data.token);
+      console.log("[Google Auth] ✅ Login bem-sucedido! JWT salvo.");
 
-      console.log("✅ Login com Google bem-sucedido! JWT salvo.");
+      // 5. Navega para a área autenticada
       router.replace("/(tabs)" as any);
     } catch (err: any) {
-      console.error("❌ Erro ao autenticar no backend:", err?.response?.data ?? err.message);
-      setError("Falha ao autenticar com o servidor. Tente novamente.");
+      if (isErrorWithCode(err)) {
+        switch (err.code) {
+          case statusCodes.SIGN_IN_CANCELLED:
+            console.log("[Google Auth] Cancelado.");
+            break;
+          case statusCodes.IN_PROGRESS:
+            console.log("[Google Auth] Login já em progresso.");
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            setError("Google Play Services não está disponível neste dispositivo.");
+            break;
+          default:
+            console.error("[Google Auth] Erro Google:", err.code, err.message);
+            setError("Erro no login com Google. Tente novamente.");
+        }
+      } else if (err?.response?.data) {
+        // Erro do nosso backend
+        console.error("[Google Auth] Erro backend:", err.response.data);
+        setError("Falha ao autenticar com o servidor.");
+      } else {
+        console.error("[Google Auth] Erro inesperado:", err);
+        setError("Erro inesperado. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const signInWithGoogle = () => {
-    setError(null);
-    promptAsync();
   };
 
   return {
     signInWithGoogle,
     isLoading,
     error,
-    isReady: !!request,
+    isReady: true, // GoogleSignin não precisa de promise para ficar "pronto"
   };
 }
+
+// Re-exporta o GoogleSigninButton para uso direto se necessário
+export { GoogleSigninButton };
