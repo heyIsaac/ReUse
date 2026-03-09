@@ -10,5 +10,6 @@ public record VerifyOtpRequest(string Email, string Code);
 public record AuthResponse(string Email, string Token);
 
 // 4. O envelope que vem do React Native quando o usuário fez login com Google
-//    IdToken é o token emitido pelo Google que o backend precisa validar
-public record GoogleSignInRequest(string IdToken);
+//    IdToken é o token emitido pelo Google que o backend precisa validar.
+//    AccessToken é o fallback quando o fluxo de código não retorna id_token diretamente.
+public record GoogleSignInRequest(string? IdToken = null, string? AccessToken = null);
