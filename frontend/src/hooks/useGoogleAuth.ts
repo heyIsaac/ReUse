@@ -1,14 +1,14 @@
+import { api } from "@/src/services/api";
 import {
   GoogleSignin,
   GoogleSigninButton,
-  statusCodes,
   isErrorWithCode,
   isSuccessResponse,
+  statusCodes,
 } from "@react-native-google-signin/google-signin";
-import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { api } from "@/src/services/api";
+import { useState } from "react";
 
 // Configura o Google Sign-In uma única vez quando o módulo é carregado.
 // webClientId é o ID do seu credential do tipo "Web Application" no Google Cloud Console.
