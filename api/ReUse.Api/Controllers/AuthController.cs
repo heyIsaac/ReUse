@@ -19,10 +19,11 @@ public class AuthController : ControllerBase
     [HttpPost("send-otp")]
     public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
     {
-        await _authService.GenerateAndSendOtpAsync(request.Email);
-        return Ok(new { Message = "Código enviado com sucesso. Olhe o terminal!" });
+        var generatedCode = await _authService.GenerateAndSendOtpAsync(request.Email);
+        
+        return Ok(new { message = "Código gerado com sucesso", code = generatedCode });
     }
-
+    
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
     {
@@ -31,7 +32,20 @@ public class AuthController : ControllerBase
         if (token == null)
             return BadRequest(new { Message = "Código inválido ou expirado." });
 
-        // Devolvemos o DTO de sucesso com o e-mail e o Token
         return Ok(new AuthResponse(request.Email, token));
+    }
+
+    [HttpPost("google-signin")]
+    public async Task<IActionResult> GoogleSignIn([FromBody] GoogleSignInRequest request)
+    {
+        if (string.IsNullOrEmpty(request.IdToken) && string.IsNullOrEmpty(request.AccessToken))
+            return BadRequest(new { Message = "idToken ou accessToken são obrigatórios." });
+
+        var token = await _authService.GoogleSignInAsync(request.IdToken, request.AccessToken);
+
+        if (token == null)
+            return Unauthorized(new { Message = "Token do Google inválido ou expirado." });
+
+        return Ok(new { Token = token });
     }
 }

@@ -11,7 +11,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddHttpClient<AuthService>();
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();

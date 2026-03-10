@@ -13,6 +13,8 @@ import { Text } from "@/components/ui/text";
 import { FacebookIcon } from "@/components/icons/facebook.icon";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { api } from "@/src/services/api";
+import { useGoogleAuth } from "@/src/hooks/useGoogleAuth";
+import axios from "axios";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -22,6 +24,13 @@ export default function LoginScreen() {
   const [hasError, setHasError] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    signInWithGoogle,
+    isLoading: isGoogleLoading,
+    error: googleError,
+    isReady: isGoogleReady,
+  } = useGoogleAuth();
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -35,20 +44,38 @@ export default function LoginScreen() {
 
     setIsLoading(true);
     try {
-      // Chama o nosso C# rodando no Arch Linux!
-      await api.post("/auth/send-otp", { email });
+      // 1. Pede pro C# gerar e salvar o código no banco
+      const response = await api.post("/auth/send-otp", { email });
 
-      // Passa o e-mail via parâmetro para a tela de OTP
+      // 2. Pega o código que o C# devolveu
+      const generatedCode = response.data.code;
+
+      console.log("🔎 VERIFICANDO CHAVES DO .ENV:");
+      console.log("Service ID:", process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID);
+      console.log("Template ID:", process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID);
+      console.log("Public Key:", process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY);
+
+      console.log(generatedCode);
+
+      await axios.post("https://api.emailjs.com/api/v1.0/email/send", {
+        service_id: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID,
+        template_id: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID,
+        user_id: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY,
+        template_params: {
+          to_email: email,
+          code: generatedCode,
+        },
+      });
+
+      console.log("E-mail disparado via EmailJS com sucesso!");
       router.push(`/(auth)/otp?email=${email}`);
     } catch (error) {
-      console.error("Erro na API:", error);
+      console.error("Erro no fluxo de login:", error);
       setHasError(true);
-      //TODO: um toast de erro de servidor futuramente
     } finally {
-      setIsLoading(false); // Libera o botão
+      setIsLoading(false);
     }
   };
-
   return (
     <View className="flex-1 bg-zinc-950">
       {showToast && (
@@ -82,14 +109,16 @@ export default function LoginScreen() {
           style={{ paddingBottom: Math.max(insets.bottom + 16, 32) }}
         >
           <Text variant="h1" className="text-left mb-8 text-zinc-900">
-            Login.
+            Login
           </Text>
 
           <View className="flex-row gap-4 w-full">
             <SocialAuthButton
               icon={<GoogleIcon />}
               label="Google"
-              onPress={() => console.log("Google")}
+              onPress={signInWithGoogle}
+              disabled={!isGoogleReady || isGoogleLoading}
+              isLoading={isGoogleLoading}
             />
             <SocialAuthButton
               icon={<FacebookIcon />}
