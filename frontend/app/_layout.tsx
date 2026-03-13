@@ -3,6 +3,9 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
+
+import { LogBox } from 'react-native';
+
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useColorScheme } from "react-native";
@@ -12,6 +15,7 @@ import "../global.css";
 export default function RootLayout() {
   // Lendo o tema (Light/Dark) diretamente do sistema operacional
   const colorScheme = useColorScheme();
+  LogBox.ignoreLogs(['SafeAreaView has been deprecated']);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store"; // Cofre nativo
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   TextInput,
@@ -10,9 +10,8 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
-import { api } from "@/src/services/api"; // Nossa API
+import { api } from "@/src/services/api";
 import { StatusBar } from "expo-status-bar";
 import { ChevronLeft } from "lucide-react-native";
 
@@ -30,6 +29,12 @@ export default function OtpScreen() {
   const [hasError, setHasError] = useState(false);
 
   const codeArray = new Array(CODE_LENGTH).fill(0);
+
+  useEffect(() => {
+    if (code.length === CODE_LENGTH) {
+      handleVerify();
+    }
+  }, [code]);
 
   const handleVerify = async () => {
     if (code.length !== CODE_LENGTH) return;
@@ -52,9 +57,7 @@ export default function OtpScreen() {
         await SecureStore.setItemAsync("reuse_jwt_token", token);
         console.log("MÁGICA FEITA! Token salvo na biometria do sistema.");
 
-        // 4. Manda o usuário pro app principal (Ajuste essa rota depois!)
-        // router.replace("/(tabs)/home");
-        alert("Logado com sucesso! 🎉");
+        router.replace("/(tabs)");
       }
     } catch (error) {
       console.error("Código inválido", error);
@@ -94,7 +97,7 @@ export default function OtpScreen() {
           <Text className="text-base text-zinc-500 mb-2">
             A verification code has been sent to
           </Text>
-          {/* E-mail dinâmico! */}
+          {/* E-mail dinâmico */}
           <Text className="text-base font-bold text-zinc-900 mb-10">
             {email || "email@desconhecido.com"}
           </Text>
@@ -142,13 +145,12 @@ export default function OtpScreen() {
             />
           </View>
 
-          <View className="flex-row justify-center items-center mb-auto">
+          <View className="flex-row justify-center items-center mb-10 h-14">
             <Text className="text-zinc-500 mr-1">
               Didn&apos;t receive code?
             </Text>
             <TouchableOpacity
               activeOpacity={0.7}
-              // Opcional: Aqui você pode chamar a api.post('/auth/send-otp') de novo!
               onPress={() => console.log("Reenviando OTP...")}
             >
               <Text className="text-emerald-600 font-bold underline">
@@ -157,21 +159,11 @@ export default function OtpScreen() {
             </TouchableOpacity>
           </View>
 
-          <Button
-            disabled={code.length !== CODE_LENGTH || isLoading}
-            className={`w-full h-14 rounded-full mt-8 ${
-              code.length === CODE_LENGTH
-                ? "bg-emerald-600 active:bg-emerald-700"
-                : "bg-zinc-300"
-            }`}
-            onPress={handleVerify}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-lg font-bold text-white">Verify</Text>
-            )}
-          </Button>
+          {isLoading && (
+            <View className="w-full items-center justify-center mt-2 h-14">
+              <ActivityIndicator size="large" color="#059669" />
+            </View>
+          )}
         </View>
       </KeyboardAwareScrollView>
     </View>
