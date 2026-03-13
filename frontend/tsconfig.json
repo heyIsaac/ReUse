@@ -5,7 +5,17 @@
     "paths": {
       "@/*": [
         "./*"
-      ]
+      ],
+      "@/components/*": [
+        "./components/*"
+      ],
+      "@/hooks": [
+        "./src/hooks"
+      ],
+      "@/services/*": [
+        "./src/services/*"
+      ],
+
     }
   },
   "include": [
