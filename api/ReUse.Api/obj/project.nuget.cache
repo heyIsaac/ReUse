@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "aAv1G7TUqv09O4wXZOL+IO9eqmzINmhIThX16CK6wGkJ7deQprid24XZqSQ4MfD9B/1Jwwr9qYxVwXrA/tIDfQ==",
+  "dgSpecHash": "Q1Okml+GRi+5uSr/fppISnZm+V90mNICEuQI9ruHVdMGgMZ1IzPkhrIgVhM1uyf5b6IAibKc1f/8sWUliOgzCw==",
   "success": true,
   "projectFilePath": "/home/sallein/ReUse/api/ReUse.Api/ReUse.Api.csproj",
   "expectedPackageFiles": [
@@ -58,7 +58,7 @@
     "/home/sallein/.nuget/packages/system.text.encoding.codepages/6.0.0/system.text.encoding.codepages.6.0.0.nupkg.sha512",
     "/home/sallein/.nuget/packages/system.text.json/8.0.5/system.text.json.8.0.5.nupkg.sha512",
     "/home/sallein/.nuget/packages/system.threading.channels/6.0.0/system.threading.channels.6.0.0.nupkg.sha512",
-    "/home/sallein/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.23/microsoft.aspnetcore.app.ref.8.0.23.nupkg.sha512"
+    "/home/sallein/.nuget/packages/microsoft.aspnetcore.app.ref/8.0.24/microsoft.aspnetcore.app.ref.8.0.24.nupkg.sha512"
   ],
   "logs": []
 }
