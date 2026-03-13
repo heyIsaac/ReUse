@@ -1,5 +1,5 @@
 import { api } from '@/src/services/api';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export function useUserProfile() {
   return useQuery({
@@ -16,5 +16,20 @@ export function useUserProfile() {
     },
     // Mantém os dados no cache ("frescos") por bastante tempo para evitar requisições repetidas na API
     staleTime: 1000 * 60 * 60 * 24, // 24 horas
+  });
+}
+
+export function useUpdateAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (avatarUrl: string) => {
+      const response = await api.put('/users/me/avatar', { avatarUrl });
+      return response.data;
+    },
+    onSuccess: () => {
+      // Invalida a query do perfil do usuário para que a tela recarregue a imagem instantaneamente
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+    },
   });
 }
