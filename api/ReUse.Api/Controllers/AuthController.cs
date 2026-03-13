@@ -10,7 +10,6 @@ public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
 
-    // Injeção de dependência do nosso serviço
     public AuthController(AuthService authService)
     {
         _authService = authService;
@@ -20,15 +19,15 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
     {
         var generatedCode = await _authService.GenerateAndSendOtpAsync(request.Email);
-        
+
         return Ok(new { message = "Código gerado com sucesso", code = generatedCode });
     }
-    
+
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
     {
         var token = await _authService.VerifyOtpAsync(request.Email, request.Code);
-        
+
         if (token == null)
             return BadRequest(new { Message = "Código inválido ou expirado." });
 
@@ -45,6 +44,20 @@ public class AuthController : ControllerBase
 
         if (token == null)
             return Unauthorized(new { Message = "Token do Google inválido ou expirado." });
+
+        return Ok(new { Token = token });
+    }
+
+    [HttpPost("facebook-signin")]
+    public async Task<IActionResult> FacebookSignIn([FromBody] FacebookSignInRequest request)
+    {
+        if (string.IsNullOrEmpty(request.AccessToken))
+            return BadRequest(new { Message = "accessToken é obrigatório." });
+
+        var token = await _authService.FacebookSignInAsync(request.AccessToken);
+
+        if (token == null)
+            return Unauthorized(new { Message = "Token do Facebook inválido, expirado ou sem permissão de e-mail." });
 
         return Ok(new { Token = token });
     }
