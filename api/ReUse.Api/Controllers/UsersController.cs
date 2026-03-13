@@ -45,4 +45,31 @@ public class UsersController : ControllerBase
             CreatedAt = user.CreatedAt
         });
     }
+
+    [HttpPut("me/avatar")]
+    public async Task<IActionResult> UpdateAvatar([FromBody] UpdateAvatarRequest request)
+    {
+        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
+
+        if (string.IsNullOrEmpty(email))
+            return Unauthorized(new { Message = "Token inválido ou sem e-mail." });
+
+        if (string.IsNullOrEmpty(request.AvatarUrl))
+            return BadRequest(new { Message = "A URL do avatar é obrigatória." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user == null)
+            return NotFound(new { Message = "Usuário não encontrado." });
+
+        user.ProfilePictureUrl = request.AvatarUrl;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "Avatar atualizado com sucesso!", AvatarUrl = user.ProfilePictureUrl });
+    }
+}
+
+public class UpdateAvatarRequest
+{
+    public string AvatarUrl { get; set; } = string.Empty;
 }
