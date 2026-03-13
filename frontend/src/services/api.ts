@@ -1,16 +1,16 @@
 import axios from "axios";
+import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 
 const BASE_URL = "https://reuse-9fal.onrender.com/api";
-//const BASE_URL = "http://localhost:5251/api";
+// const BASE_URL = "http://localhost:5251/api";
 
 export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 50000,
 });
 
-// Interceptor: Toda vez que o app for fazer um request (ex: postar produto),
-// ele automaticamente injeta o Token JWT no cabeçalho se o usuário estiver logado.
+
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync("reuse_jwt_token");
 
@@ -20,3 +20,20 @@ api.interceptors.request.use(async (config) => {
 
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    if (error.response && error.response.status === 401) {
+      console.error("🚨 [API] Token expirado ou inválido. Deslogando usuário...");
+
+      await SecureStore.deleteItemAsync("reuse_jwt_token");
+
+      router.replace("/(auth)/login");
+    }
+
+    return Promise.reject(error);
+  }
+);
