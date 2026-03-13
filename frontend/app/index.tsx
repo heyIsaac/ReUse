@@ -40,7 +40,17 @@ export default function OnboardingScreen() {
   const scrollX = useSharedValue(0);
 
   useEffect(() => {
-    async function checkOnboarding() {
+    async function checkInitialState() {
+      const token = await SecureStore.getItemAsync("reuse_jwt_token");
+      if (token) {
+        // Usuário já logado
+        router.replace("/(tabs)");
+
+        // Debug
+        // router.replace("/(auth)/login");
+        return;
+      }
+
       const hasCompleted = await SecureStore.getItemAsync("hasCompletedOnboarding");
       if (hasCompleted === "true") {
         router.replace("/(auth)/login");
@@ -48,7 +58,7 @@ export default function OnboardingScreen() {
         setIsReady(true);
       }
     }
-    checkOnboarding();
+    checkInitialState();
   }, [router]);
 
   const onScroll = useAnimatedScrollHandler({

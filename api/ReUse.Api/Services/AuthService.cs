@@ -183,6 +183,63 @@ public class AuthService
     }
 
 
+    // ─── Facebook OAuth ──────────────────────────────────────────────────────
+
+    public async Task<string?> FacebookSignInAsync(string accessToken)
+    {
+        var result = await GetFacebookUserInfoAsync(accessToken);
+        if (result == null) return null;
+
+        var (email, name, picture) = result.Value;
+
+        if (string.IsNullOrEmpty(email))
+        {
+            Console.WriteLine("[Facebook] E-mail não encontrado (permissão pode não ter sido dada).");
+            return null;
+        }
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (user == null)
+        {
+            user = new User { Email = email, Name = name, ProfilePictureUrl = picture, AuthProvider = "Facebook" };
+            _context.Users.Add(user);
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(name)) user.Name = name;
+            if (!string.IsNullOrEmpty(picture)) user.ProfilePictureUrl = picture;
+            user.AuthProvider = "Facebook";
+        }
+
+        await _context.SaveChangesAsync();
+        return GenerateJwtToken(user);
+    }
+
+    private async Task<(string Email, string? Name, string? Picture)?> GetFacebookUserInfoAsync(string accessToken)
+    {
+        var url = $"https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token={accessToken}";
+
+        HttpResponseMessage response;
+        try { response = await _httpClient.GetAsync(url); }
+        catch (Exception ex) { Console.WriteLine($"[Facebook] Erro graph api: {ex.Message}"); return null; }
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"[Facebook] graph api status: {response.StatusCode}");
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = doc.RootElement;
+
+        var email = root.TryGetProperty("email", out var e) ? e.GetString() : null;
+        var name = root.TryGetProperty("name", out var n) ? n.GetString() : null;
+        var picture = root.TryGetProperty("picture", out var p) && p.TryGetProperty("data", out var d) && d.TryGetProperty("url", out var u) ? u.GetString() : null;
+
+        return string.IsNullOrEmpty(email) ? null : (email!, name, picture);
+    }
+
+
     // ─── JWT ─────────────────────────────────────────────────────────────────
 
     private string GenerateJwtToken(User user)

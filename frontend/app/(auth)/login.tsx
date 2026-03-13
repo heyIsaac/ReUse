@@ -4,90 +4,71 @@ import { ActivityIndicator, Image, Platform, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { FacebookIcon } from "@/components/icons/facebook-icon";
+import { GoogleIcon } from "@/components/icons/google-icon";
+import { ScreenLayout } from "@/components/layout/screen-layout";
 import { Button } from "@/components/ui/button";
 import { DividerWithText } from "@/components/ui/divider-with-text";
 import { EmailInputField } from "@/components/ui/email-input-field";
 import { SocialAuthButton } from "@/components/ui/social-auth-button";
 import { Text } from "@/components/ui/text";
+import { Toast } from "@/components/ui/toast";
 
-import { FacebookIcon } from "@/components/icons/facebook.icon";
-import { GoogleIcon } from "@/components/icons/google-icon";
-import { api } from "@/src/services/api";
-import { useGoogleAuth } from "@/src/hooks/useGoogleAuth";
-import axios from "axios";
+import { useEmailAuth, useFacebookAuth, useGoogleAuth, useNetworkCheck, useToast } from "@/src/hooks";
+
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState("");
-  const [hasError, setHasError] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { isVisible, message, type, showToast } = useToast();
+  const { checkConnectionAsync } = useNetworkCheck(showToast);
+
+  const {
+    signInWithEmail,
+    isLoading,
+    hasError,
+    setHasError,
+  } = useEmailAuth(showToast);
 
   const {
     signInWithGoogle,
     isLoading: isGoogleLoading,
-    error: googleError,
     isReady: isGoogleReady,
   } = useGoogleAuth();
 
+  const {
+    signInWithFacebook,
+    isLoading: isFacebookLoading
+  } = useFacebookAuth();
+
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const handleLoginPress = async () => {
-    if (!isEmailValid) {
-      setHasError(true);
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // 1. Pede pro C# gerar e salvar o código no banco
-      const response = await api.post("/auth/send-otp", { email });
-
-      // 2. Pega o código que o C# devolveu
-      const generatedCode = response.data.code;
-
-      console.log("🔎 VERIFICANDO CHAVES DO .ENV:");
-      console.log("Service ID:", process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID);
-      console.log("Template ID:", process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID);
-      console.log("Public Key:", process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY);
-
-      console.log(generatedCode);
-
-      await axios.post("https://api.emailjs.com/api/v1.0/email/send", {
-        service_id: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID,
-        template_id: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID,
-        user_id: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY,
-        template_params: {
-          to_email: email,
-          code: generatedCode,
-        },
-      });
-
-      console.log("E-mail disparado via EmailJS com sucesso!");
-      router.push(`/(auth)/otp?email=${email}`);
-    } catch (error) {
-      console.error("Erro no fluxo de login:", error);
-      setHasError(true);
-    } finally {
-      setIsLoading(false);
+  const handleGoogleLoginPress = async () => {
+    const isConnected = await checkConnectionAsync();
+    if (isConnected) {
+      signInWithGoogle();
     }
   };
+
+  const handleFacebookLoginPress = async () => {
+    const isConnected = await checkConnectionAsync();
+    if (isConnected) {
+      signInWithFacebook();
+    }
+  };
+
+  const handleLoginPress = async () => {
+    const isConnected = await checkConnectionAsync();
+    if (!isConnected) return;
+
+    await signInWithEmail(email);
+  };
   return (
-    <View className="flex-1 bg-zinc-950">
-      {showToast && (
-        <View
-          className="absolute left-6 right-6 bg-red-500 rounded-2xl p-4 shadow-lg z-50 flex-row items-center"
-          style={{ top: insets.top + 16 }}
-        >
-          <Text className="text-white font-bold text-base">
-            ⚠️ Digite um e-mail válido para continuar.
-          </Text>
-        </View>
-      )}
+    <ScreenLayout noPadding applyTopInset={false} className="bg-zinc-950">
+      <Toast visible={isVisible} message={message} type={type} topOffset={insets.top + 16} />
 
       <Image
         source={require("../../src/assets/images/background-login.png")}
@@ -116,14 +97,16 @@ export default function LoginScreen() {
             <SocialAuthButton
               icon={<GoogleIcon />}
               label="Google"
-              onPress={signInWithGoogle}
+              onPress={handleGoogleLoginPress}
               disabled={!isGoogleReady || isGoogleLoading}
               isLoading={isGoogleLoading}
             />
             <SocialAuthButton
               icon={<FacebookIcon />}
               label="Facebook"
-              onPress={() => console.log("Facebook")}
+              onPress={handleFacebookLoginPress}
+              disabled={isFacebookLoading}
+              isLoading={isFacebookLoading}
             />
           </View>
 
@@ -155,6 +138,6 @@ export default function LoginScreen() {
           </Button>
         </View>
       </KeyboardAwareScrollView>
-    </View>
+    </ScreenLayout>
   );
 }
