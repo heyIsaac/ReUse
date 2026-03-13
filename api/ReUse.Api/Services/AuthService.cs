@@ -61,7 +61,12 @@ public class AuthService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
         {
-            user = new User { Email = email, AuthProvider = "Email" };
+            user = new User 
+            { 
+                Email = email, 
+                AuthProvider = "Email",
+                ProfilePictureUrl = GetRandomFunEmojiUrl()
+            };
             _context.Users.Add(user);
         }
 
@@ -105,11 +110,16 @@ public class AuthService
             return null;
         }
 
-        // Cria ou atualiza o usuário no banco
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
         {
-            user = new User { Email = email, Name = name, ProfilePictureUrl = picture, AuthProvider = "Google" };
+            user = new User 
+            { 
+                Email = email, 
+                Name = name, 
+                ProfilePictureUrl = !string.IsNullOrEmpty(picture) ? picture : GetRandomFunEmojiUrl(), 
+                AuthProvider = "Google" 
+            };
             _context.Users.Add(user);
         }
         else
@@ -201,7 +211,13 @@ public class AuthService
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
         if (user == null)
         {
-            user = new User { Email = email, Name = name, ProfilePictureUrl = picture, AuthProvider = "Facebook" };
+            user = new User 
+            { 
+                Email = email, 
+                Name = name, 
+                ProfilePictureUrl = !string.IsNullOrEmpty(picture) ? picture : GetRandomFunEmojiUrl(), 
+                AuthProvider = "Facebook" 
+            };
             _context.Users.Add(user);
         }
         else
@@ -239,6 +255,14 @@ public class AuthService
         return string.IsNullOrEmpty(email) ? null : (email!, name, picture);
     }
 
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private string GetRandomFunEmojiUrl()
+    {
+        var seed = Guid.NewGuid().ToString("N");
+        return $"https://api.dicebear.com/9.x/fun-emoji/png?seed={seed}";
+    }
 
     // ─── JWT ─────────────────────────────────────────────────────────────────
 
