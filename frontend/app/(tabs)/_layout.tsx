@@ -1,4 +1,4 @@
-import { Tabs } from 'expo-router';
+import { router, Tabs } from 'expo-router';
 import { Home, Map as MapIcon, MessageCircle, Plus, User } from 'lucide-react-native';
 import { Platform, View } from 'react-native';
 
@@ -45,30 +45,28 @@ export default function TabLayout() {
         }}
       />
 
-      {/* O BOTAO CENTRAL (FAB - Floating Action Button) */}
+     {/* O BOTAO CENTRAL INTERCEPTADO */}
       <Tabs.Screen
         name="donate"
+        listeners={() => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            router.push('/create-listing');
+          },
+        })}
         options={{
           title: 'Desapegar',
-          tabBarLabel: () => null, // Esconde o texto para focar na ação
+          tabBarLabel: () => null,
           tabBarIcon: ({ focused }) => (
             <View
               className="items-center justify-center rounded-full bg-[#FF692E]"
               style={{
-                width: 56,
-                height: 56,
-                marginTop: -32, // Faz o botão subir para fora da barra
-                borderWidth: 4,
-                borderColor: '#FFFFFF',
-                shadowColor: '#FF692E',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.4,
-                shadowRadius: 8,
-                elevation: 5,
+                width: 56, height: 56, marginTop: -32,
+                borderWidth: 4, borderColor: '#FFFFFF',
+                shadowColor: '#FF692E', shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.4, shadowRadius: 8, elevation: 5,
                 transform: [{ scale: focused ? 1.05 : 1 }]
               }}
-              accessibilityLabel="Publicar novo desapego"
-              accessibilityRole="button"
             >
               <Plus color="#FFFFFF" size={28} strokeWidth={3.5} />
             </View>
