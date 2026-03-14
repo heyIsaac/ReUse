@@ -1,10 +1,6 @@
-import React from 'react';
-import { View, Text } from 'react-native';
-
-export default function DonateScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-[#F8F8F8]">
-      <Text className="text-lg font-bold">Desapegar</Text>
-    </View>
-  );
+export default function DonateTabDummy() {
+  // Esta tela nunca será renderizada pois o _layout.tsx intercepta o clique na Tab
+  // e faz um router.push('/donate').
+  // O arquivo precisa existir fisicamente para o botão aparecer na TabBar.
+  return null;
 }
