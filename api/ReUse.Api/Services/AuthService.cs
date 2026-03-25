@@ -117,7 +117,7 @@ public class AuthService
             { 
                 Email = email, 
                 Name = name, 
-                ProfilePictureUrl = !string.IsNullOrEmpty(picture) ? picture : GetRandomFunEmojiUrl(), 
+                ProfilePictureUrl = GetRandomFunEmojiUrl(), 
                 AuthProvider = "Google" 
             };
             _context.Users.Add(user);
@@ -125,7 +125,6 @@ public class AuthService
         else
         {
             if (!string.IsNullOrEmpty(name)) user.Name = name;
-            if (!string.IsNullOrEmpty(picture)) user.ProfilePictureUrl = picture;
             user.AuthProvider = "Google";
         }
 
@@ -215,7 +214,7 @@ public class AuthService
             { 
                 Email = email, 
                 Name = name, 
-                ProfilePictureUrl = !string.IsNullOrEmpty(picture) ? picture : GetRandomFunEmojiUrl(), 
+                ProfilePictureUrl = GetRandomFunEmojiUrl(), 
                 AuthProvider = "Facebook" 
             };
             _context.Users.Add(user);
@@ -223,7 +222,6 @@ public class AuthService
         else
         {
             if (!string.IsNullOrEmpty(name)) user.Name = name;
-            if (!string.IsNullOrEmpty(picture)) user.ProfilePictureUrl = picture;
             user.AuthProvider = "Facebook";
         }
 

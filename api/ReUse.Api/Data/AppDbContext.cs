@@ -11,6 +11,9 @@ public class AppDbContext : DbContext
     public DbSet<OtpCode> OtpCodes { get; set; }
     public DbSet<Listing> Listings { get; set; }
 
+    public DbSet<ChatRoom> ChatRooms { get; set; }
+    public DbSet<ChatMessage> ChatMessages { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
