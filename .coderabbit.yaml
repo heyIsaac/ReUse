@@ -148,7 +148,7 @@ reviews:
         - Há risco de erro humano?
 
   auto_review:
-    base_branches: [".*"]
+    base_branches: ["^develop$", "^main$"]
 
   path_filters:
     - "!**/*.md"
@@ -157,7 +157,6 @@ reviews:
     - "!**/android/**/build/**"
     - "!**/ios/**/build/**"
     - "!**/coverage/**"
-    - "!**/*.lock"
     - "!**/generated/**"
 
   labeling_instructions:
