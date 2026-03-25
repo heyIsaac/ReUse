@@ -2,10 +2,7 @@
 language: "pt-BR"
 
 tone_instructions: >
-  Pense como um Product Engineer Sênior em um app mobile de marketplace sustentável.
-  Seja crítico, direto e orientado a impacto real no negócio e no usuário.
-  Priorize confiança, segurança, performance mobile e experiência de negociação.
-  Evite sugestões genéricas.
+  Pense como um Product Engineer sênior em app mobile de marketplace sustentável. Seja direto e crítico, focando impacto real no negócio e no usuário. Priorize confiança, segurança, performance e UX de negociação. Evite sugestões genéricas.
 
 reviews:
   profile: "assertive"
