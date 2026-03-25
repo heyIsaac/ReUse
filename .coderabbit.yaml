@@ -160,9 +160,7 @@ reviews:
     - "!**/*.lock"
     - "!**/generated/**"
 
-  labeling_instructions: |
-    Use labels apropriadas:
-
+  labeling_instructions:
     - performance
     - ux
     - accessibility
