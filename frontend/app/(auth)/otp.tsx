@@ -1,15 +1,11 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store"; // Cofre nativo
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { TextInput, TouchableOpacity, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { api } from "@/src/services/api";
 import { StatusBar } from "expo-status-bar";
@@ -84,12 +80,14 @@ export default function OtpScreen() {
             paddingBottom: Math.max(insets.bottom + 16, 24),
           }}
         >
-          <TouchableOpacity
+          <Button
+            variant="outline"
+            size="icon"
+            rounded="full"
             onPress={() => router.back()}
-            className="w-12 h-12 rounded-full border border-zinc-200 items-center justify-center mb-8 active:bg-zinc-50"
-          >
-            <ChevronLeft size={24} color="#18181b" strokeWidth={2} />
-          </TouchableOpacity>
+            className="mb-8"
+            leftIcon={<ChevronLeft size={24} color="#18181b" strokeWidth={2} />}
+          />
 
           <Text variant="h2" className="text-zinc-900 border-none pb-0 mb-2">
             Enter the Code
@@ -160,8 +158,8 @@ export default function OtpScreen() {
           </View>
 
           {isLoading && (
-            <View className="w-full items-center justify-center mt-2 h-14">
-              <ActivityIndicator size="large" color="#059669" />
+            <View className="w-full items-center justify-center mt-2">
+              <Button isLoading variant="ghost" size="lg" />
             </View>
           )}
         </View>

@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Image, Platform, View } from "react-native";
+import { Image, Platform, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -9,13 +9,19 @@ import { GoogleIcon } from "@/components/icons/google-icon";
 import { ScreenLayout } from "@/components/layout/screen-layout";
 import { Button } from "@/components/ui/button";
 import { DividerWithText } from "@/components/ui/divider-with-text";
-import { EmailInputField } from "@/components/ui/email-input-field";
+import { Input } from "@/components/ui/input";
 import { SocialAuthButton } from "@/components/ui/social-auth-button";
 import { Text } from "@/components/ui/text";
 import { Toast } from "@/components/ui/toast";
+import { Mail } from "lucide-react-native";
 
-import { useEmailAuth, useFacebookAuth, useGoogleAuth, useNetworkCheck, useToast } from "@/src/hooks";
-
+import {
+  useEmailAuth,
+  useFacebookAuth,
+  useGoogleAuth,
+  useNetworkCheck,
+  useToast,
+} from "@/src/hooks";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -26,12 +32,8 @@ export default function LoginScreen() {
   const { isVisible, message, type, showToast } = useToast();
   const { checkConnectionAsync } = useNetworkCheck(showToast);
 
-  const {
-    signInWithEmail,
-    isLoading,
-    hasError,
-    setHasError,
-  } = useEmailAuth(showToast);
+  const { signInWithEmail, isLoading, hasError, setHasError } =
+    useEmailAuth(showToast);
 
   const {
     signInWithGoogle,
@@ -39,10 +41,8 @@ export default function LoginScreen() {
     isReady: isGoogleReady,
   } = useGoogleAuth();
 
-  const {
-    signInWithFacebook,
-    isLoading: isFacebookLoading
-  } = useFacebookAuth();
+  const { signInWithFacebook, isLoading: isFacebookLoading } =
+    useFacebookAuth();
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -68,7 +68,12 @@ export default function LoginScreen() {
   };
   return (
     <ScreenLayout noPadding applyTopInset={false} className="bg-zinc-950">
-      <Toast visible={isVisible} message={message} type={type} topOffset={insets.top + 16} />
+      <Toast
+        visible={isVisible}
+        message={message}
+        type={type}
+        topOffset={insets.top + 16}
+      />
 
       <Image
         source={require("../../src/assets/images/background-login.png")}
@@ -112,30 +117,30 @@ export default function LoginScreen() {
 
           <DividerWithText text="or" />
 
-          <EmailInputField
+          <Input
+            label="Endereço de E-mail"
+            placeholder="seu@email.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
             value={email}
             onChangeText={(text) => {
               setEmail(text);
               if (hasError) setHasError(false);
             }}
-            hasError={hasError}
+            error={hasError ? "E-mail inválido" : undefined}
+            icon={<Mail size={24} color={hasError ? "#ef4444" : "#a1a1aa"} />}
           />
 
           <Button
+            label="Enter"
+            variant={isEmailValid ? "primary" : "muted"}
+            rounded="full"
             disabled={!isEmailValid || isLoading}
-            className={`w-full rounded-full mt-8 ${
-              isEmailValid
-                ? "bg-emerald-600 active:bg-emerald-700"
-                : "bg-zinc-300 active:bg-zinc-400"
-            }`}
+            isLoading={isLoading}
             onPress={handleLoginPress}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-lg font-bold text-white">Enter</Text>
-            )}
-          </Button>
+            className="mt-8"
+          />
         </View>
       </KeyboardAwareScrollView>
     </ScreenLayout>

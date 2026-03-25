@@ -1,6 +1,4 @@
-import { ActivityIndicator } from "react-native";
 import { Button } from "./button";
-import { Text } from "./text";
 
 interface SocialAuthButtonProps {
   icon: React.ReactNode;
@@ -20,12 +18,14 @@ export function SocialAuthButton({
   return (
     <Button
       variant="outline"
+      label={label}
+      leftIcon={icon}
+      isLoading={isLoading}
       onPress={onPress}
       disabled={disabled}
-      className="flex-1 flex-row rounded-full h-14 bg-zinc-50 border-zinc-200 active:bg-zinc-100"
-    >
-      {isLoading ? <ActivityIndicator size="small" color="#18181b" /> : icon}
-      <Text className="ml-2 font-bold text-zinc-800">{label}</Text>
-    </Button>
+      rounded="full"
+      className="flex-1 bg-zinc-50 border-zinc-200"
+      labelClasses="text-zinc-800"
+    />
   );
 }

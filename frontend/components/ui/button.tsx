@@ -1,11 +1,11 @@
-import { TextClassContext } from "@/components/ui/text";
+import { Text, TextClassContext } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Platform, Pressable } from "react-native";
+import { ActivityIndicator, Platform, Pressable } from "react-native";
 
 const buttonVariants = cva(
   cn(
-    "group shrink-0 flex-row items-center justify-center gap-2 rounded-md shadow-none",
+    "group shrink-0 flex-row items-center justify-center gap-2 rounded-xl shadow-none",
     Platform.select({
       web: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     }),
@@ -13,71 +13,74 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: cn(
-          "bg-primary active:bg-primary/90 shadow-sm shadow-black/5",
+        primary: cn(
+          "bg-primary active:bg-[#246F45] border-b-4 border-b-[#246F45]",
           Platform.select({ web: "hover:bg-primary/90" }),
         ),
+        secondary: cn(
+          "bg-primary-dark active:bg-primary-dark/90",
+          Platform.select({ web: "hover:bg-primary-dark/90" }),
+        ),
+        dark: cn(
+          "bg-primary-darker active:bg-primary-darker/90",
+          Platform.select({ web: "hover:bg-primary-darker/90" }),
+        ),
         destructive: cn(
-          "bg-destructive active:bg-destructive/90 dark:bg-destructive/60 shadow-sm shadow-black/5",
+          "bg-destructive active:bg-destructive/90 dark:bg-destructive/60",
           Platform.select({
             web: "hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
           }),
         ),
         outline: cn(
-          "border-border bg-background active:bg-accent dark:bg-input/30 dark:border-input dark:active:bg-input/50 border shadow-sm shadow-black/5",
+          "border-primary bg-background active:bg-primary/10 border-2 border-[#CDCED7]",
           Platform.select({
-            web: "hover:bg-accent dark:hover:bg-input/50",
+            web: "hover:bg-primary/10",
           }),
-        ),
-        secondary: cn(
-          "bg-secondary active:bg-secondary/80 shadow-sm shadow-black/5",
-          Platform.select({ web: "hover:bg-secondary/80" }),
         ),
         ghost: cn(
           "active:bg-accent dark:active:bg-accent/50",
           Platform.select({ web: "hover:bg-accent dark:hover:bg-accent/50" }),
         ),
+        muted: cn(
+          "bg-muted-gray active:bg-muted-gray/80",
+          Platform.select({ web: "hover:bg-muted-gray/80" }),
+        ),
         link: "",
       },
       size: {
-        default: cn(
-          "h-16 px-4 py-2 sm:h-9",
-          Platform.select({ web: "has-[>svg]:px-3" }),
-        ),
-        sm: cn(
-          "h-9 gap-1.5 rounded-md px-3 sm:h-8",
-          Platform.select({ web: "has-[>svg]:px-2.5" }),
-        ),
-        lg: cn(
-          "h-11 rounded-md px-6 sm:h-10",
-          Platform.select({ web: "has-[>svg]:px-4" }),
-        ),
-        icon: "h-10 w-10 sm:h-9 sm:w-9",
+        default: "h-[56px] px-6 py-3",
+        sm: "h-10 px-4 py-2",
+        lg: "h-[64px] px-8 py-4",
+        icon: "h-12 w-12",
+      },
+      rounded: {
+        default: "rounded-xl",
+        full: "rounded-full",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "primary",
       size: "default",
+      rounded: "default",
     },
   },
 );
 
 const buttonTextVariants = cva(
   cn(
-    "text-foreground text-sm font-medium",
+    "text-foreground text-base font-bold",
     Platform.select({ web: "pointer-events-none transition-colors" }),
   ),
   {
     variants: {
       variant: {
-        default: "text-primary-foreground",
+        primary: "text-white",
+        secondary: "text-white",
+        dark: "text-white",
         destructive: "text-white",
-        outline: cn(
-          "group-active:text-accent-foreground",
-          Platform.select({ web: "group-hover:text-accent-foreground" }),
-        ),
-        secondary: "text-secondary-foreground",
+        outline: "text-primary",
         ghost: "group-active:text-accent-foreground",
+        muted: "text-zinc-900",
         link: cn(
           "text-primary group-active:underline",
           Platform.select({
@@ -87,34 +90,77 @@ const buttonTextVariants = cva(
       },
       size: {
         default: "",
-        sm: "",
-        lg: "",
+        sm: "text-sm",
+        lg: "text-lg",
         icon: "",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "primary",
       size: "default",
     },
   },
 );
 
-type ButtonProps = React.ComponentProps<typeof Pressable> &
-  React.RefAttributes<typeof Pressable> &
-  VariantProps<typeof buttonVariants>;
+interface ButtonProps
+  extends
+    React.ComponentPropsWithoutRef<typeof Pressable>,
+    VariantProps<typeof buttonVariants> {
+  label?: string;
+  labelClasses?: string;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  isLoading?: boolean;
+}
 
-function Button({ className, variant, size, ...props }: ButtonProps) {
+function Button({
+  label,
+  labelClasses,
+  className,
+  variant,
+  size,
+  rounded,
+  leftIcon,
+  rightIcon,
+  isLoading,
+  children,
+  ...props
+}: ButtonProps) {
   return (
     <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
       <Pressable
         className={cn(
           props.disabled && "opacity-50",
-          buttonVariants({ variant, size }),
+          buttonVariants({ variant, size, rounded }),
           className,
         )}
         role="button"
+        disabled={isLoading || props.disabled}
         {...props}
-      />
+      >
+        {isLoading ? (
+          <ActivityIndicator
+            color={variant === "outline" ? "green" : "white"}
+          />
+        ) : (
+          <>
+            {leftIcon}
+            {label ? (
+              <Text
+                className={cn(
+                  buttonTextVariants({ variant, size }),
+                  labelClasses,
+                )}
+              >
+                {label}
+              </Text>
+            ) : (
+              children
+            )}
+            {rightIcon}
+          </>
+        )}
+      </Pressable>
     </TextClassContext.Provider>
   );
 }
