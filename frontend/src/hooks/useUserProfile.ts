@@ -1,5 +1,5 @@
 import { api } from '@/src/services/api';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export function useUserProfile() {
   return useQuery({
@@ -9,7 +9,8 @@ export function useUserProfile() {
       const data = response.data;
 
       return {
-        name: data.name || 'Usuário ReUse',
+        id: data.id,
+        name: data.name || 'Guest',
         email: data.email || 'email@desconhecido.com',
         avatarUrl: data.profilePictureUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80',
       };

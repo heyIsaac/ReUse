@@ -47,7 +47,7 @@ export function ScreenLayout({
       ]}
       {...props}
     >
-      <StatusBar style="auto" translucent />
+      <StatusBar style="dark" translucent />
       {children}
     </View>
   );

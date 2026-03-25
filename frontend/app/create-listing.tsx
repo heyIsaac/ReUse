@@ -4,53 +4,153 @@ import { useRouter as useExpoRouter } from 'expo-router';
 import { Camera, ChevronLeft, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, View } from 'react-native';
-import Animated, { FadeIn, SlideInRight, SlideOutLeft } from 'react-native-reanimated';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Animated, {
+  FadeIn,
+  SlideInRight,
+  SlideOutLeft,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming
+} from 'react-native-reanimated';
 import * as z from 'zod';
 
 import { ScreenLayout } from '@/components/layout/screen-layout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { useCreateListing } from '@/src/services/useListings';
+import { uploadImagesToCloudinary } from '@/src/services/cloudinaryUpload';
 
-// 1. O CONTRATO (Zod Schema)
+// ─────────────────────────────────────────────
+// 1. SCHEMA
+// ─────────────────────────────────────────────
 const donateSchema = z.object({
-  images: z.array(z.string()).min(1, "Adicione pelo menos 1 foto").max(5, "Máximo de 5 fotos"),
-  title: z.string().min(5, "O título precisa ter pelo menos 5 letras"),
-  category: z.string().min(1, "Escolha uma categoria"),
-  condition: z.string().min(1, "Qual é a condição do item?"),
-  description: z.string().min(10, "Conte um pouco mais sobre o item (mín. 10 letras)"),
+  images: z
+    .array(z.string())
+    .min(1, 'Adicione pelo menos 1 foto')
+    .max(5, 'Máximo de 5 fotos'),
+  title: z.string().min(5, 'O título precisa ter pelo menos 5 caracteres'),
+  category: z.string().min(1, 'Escolha uma categoria'),
+  condition: z.string().min(1, 'Informe o estado do item'),
+  description: z
+    .string()
+    .min(10, 'Descreva um pouco mais o item (mín. 10 caracteres)'),
 });
 
 type DonateFormData = z.infer<typeof donateSchema>;
 
+// ─────────────────────────────────────────────
+// 2. CONSTANTES
+// ─────────────────────────────────────────────
 const CATEGORIES = ['Roupas', 'Calçados', 'Eletrônicos', 'Móveis', 'Livros'];
 const CONDITIONS = ['Novo', 'Seminovo', 'Com marcas de uso'];
+const TOTAL_STEPS = 3;
 
-// Mapeamento de quais campos validar em qual passo
+// Campos que pertencem a cada passo
 const STEP_FIELDS: (keyof DonateFormData)[][] = [
-  ['images'],                 // Passo 0
-  ['title', 'category'],      // Passo 1
-  ['condition', 'description']// Passo 2
+  ['images'],
+  ['title', 'category'],
+  ['condition', 'description'],
 ];
 
+// Conteúdo editorial de cada passo (UX Writing)
+const STEP_COPY = [
+  {
+    step: '01',
+    title: 'Mostre\nseu item',
+    subtitle:
+      'Fotos nítidas geram muito mais interesse. Adicione até 5 imagens.',
+  },
+  {
+    step: '02',
+    title: 'O que você\nestá doando?',
+    subtitle: 'Um título claro ajuda a pessoa certa a encontrar seu item.',
+  },
+  {
+    step: '03',
+    title: 'Conte mais\nsobre ele',
+    subtitle: 'Seja honesto sobre o estado. Isso cria confiança.',
+  },
+];
+
+// ─────────────────────────────────────────────
+// 3. COMPONENTE PRINCIPAL
+// ─────────────────────────────────────────────
 export default function CreateListing() {
   const router = useExpoRouter();
   const createListing = useCreateListing();
 
-  // Controle do Wizard
   const [currentStep, setCurrentStep] = useState(0);
-  const TOTAL_STEPS = 3;
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'saving'>('idle');
+  const isSubmitting = uploadState !== 'idle';
 
-  const { control, handleSubmit, setValue, watch, trigger, formState: { errors } } = useForm<DonateFormData>({
+  const progressWidth = useSharedValue(1 / TOTAL_STEPS);
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${progressWidth.value * 100}%`,
+  }));
+
+  const {
+    control,
+    trigger,
+    getValues,
+    setValue,
+    watch,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<DonateFormData>({
     resolver: zodResolver(donateSchema),
-    defaultValues: { images: [], title: '', category: '', condition: '', description: '' },
+    defaultValues: {
+      images: [],
+      title: '',
+      category: '',
+      condition: '',
+      description: '',
+    },
   });
 
   const selectedImages = watch('images');
+  const copy = STEP_COPY[currentStep];
 
-  // --- FUNÇÕES DE IMAGEM ---
+  // ── Avança o passo com validação dos campos do passo atual ──
+  const handleNext = async () => {
+    const isValid = await trigger(STEP_FIELDS[currentStep]);
+    if (!isValid) return;
+
+    if (currentStep < TOTAL_STEPS - 1) {
+      setDirection('forward');
+      setCurrentStep((s) => s + 1);
+      progressWidth.value = withTiming((currentStep + 2) / TOTAL_STEPS, {
+        duration: 400,
+      });
+    } else {
+      handleSubmit(onSubmit)();
+    }
+  };
+
+  // ── Volta ao passo anterior ──
+  const handlePrev = () => {
+    if (currentStep === 0) {
+      router.back();
+      return;
+    }
+    setDirection('back');
+    setCurrentStep((s) => s - 1);
+    progressWidth.value = withTiming(currentStep / TOTAL_STEPS, {
+      duration: 400,
+    });
+  };
+
+  // ── Adiciona imagem da galeria ──
   const pickImage = async () => {
     if (selectedImages.length >= 5) return;
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -59,253 +159,454 @@ export default function CreateListing() {
       aspect: [4, 5],
       quality: 0.4,
     });
-
     if (!result.canceled) {
-      setValue('images', [...selectedImages, result.assets[0].uri], { shouldValidate: true });
+      setValue('images', [...selectedImages, result.assets[0].uri], {
+        shouldValidate: true,
+      });
     }
   };
 
-  const removeImage = (indexToRemove: number) => {
-    const newImages = selectedImages.filter((_, index) => index !== indexToRemove);
-    setValue('images', newImages, { shouldValidate: true });
+  // ── Remove imagem pelo índice ──
+  const removeImage = (idx: number) => {
+    setValue(
+      'images',
+      selectedImages.filter((_, i) => i !== idx),
+      { shouldValidate: true }
+    );
   };
 
-  // --- NAVEGAÇÃO DO WIZARD ---
-  const handleNext = async () => {
-    // 1. Descobre quais campos pertencem ao passo atual
-    const fieldsToValidate = STEP_FIELDS[currentStep];
-
-    // 2. Manda o React Hook Form validar SÓ esses campos
-    const isStepValid = await trigger(fieldsToValidate);
-
-    if (isStepValid) {
-      if (currentStep < TOTAL_STEPS - 1) {
-        // Se estiver tudo ok e não for o último passo, avança a tela
-        setCurrentStep(prev => prev + 1);
-      } else {
-        // Se for o último passo, submete o formulário inteiro
-        handleSubmit(onSubmit)();
-      }
-    }
-  };
-
-  const handlePrev = () => {
-    if (currentStep > 0) setCurrentStep(prev => prev - 1);
-  };
-
+  // ── Submissão final ──
   const onSubmit = async (data: DonateFormData) => {
     try {
-      await createListing.mutateAsync(data);
-      alert("Desapego publicado com sucesso! 🎉");
+      // Phase 1: upload photos directly to Cloudinary
+      setUploadState('uploading');
+      const cloudinaryUrls = await uploadImagesToCloudinary(data.images);
+
+      // Phase 2: save the listing with the final CDN URLs
+      setUploadState('saving');
+      await createListing.mutateAsync({ ...data, images: cloudinaryUrls });
+
+      alert('Desapego publicado com sucesso! 🎉');
+      reset();
+      setCurrentStep(0);
+      progressWidth.value = withTiming(1 / TOTAL_STEPS);
       router.push('/(tabs)');
-    } catch (error) {
-      console.error("Erro ao publicar:", error);
-      alert("Erro ao publicar item. Tente novamente.");
+    } catch (err) {
+      console.error('[CreateListing] onSubmit error:', err);
+      alert('Não foi possível publicar. Verifique sua conexão e tente novamente.');
+    } finally {
+      setUploadState('idle');
     }
   };
 
-  // --- RENDERIZADOR DE TELAS ANIMADAS ---
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <Animated.View entering={SlideInRight} exiting={SlideOutLeft} className="flex-1 mt-4">
-            <Text variant="h2" className="text-[#642714] border-none pb-0 mb-2">Vamos começar com as fotos</Text>
-            <Text className="text-[#8C6D62] text-base mb-8">Boas fotos ajudam o seu item a encontrar uma nova casa mais rápido. (Máx. 5)</Text>
+  const isLastStep = currentStep === TOTAL_STEPS - 1;
 
-            <View className="flex-row flex-wrap justify-between gap-y-4">
-              {selectedImages.length < 5 && (
-                <TouchableOpacity
-                  activeOpacity={0.7} onPress={pickImage}
-                  className="w-[48%] aspect-[4/5] bg-white border-2 border-dashed border-[#FF692E]/40 rounded-3xl items-center justify-center shadow-sm"
-                >
-                  <View className="bg-[#FF692E]/10 p-4 rounded-full mb-3">
-                    <Camera color="#FF692E" size={32} />
-                  </View>
-                  <Text className="text-[#FF692E] font-bold">Adicionar Foto</Text>
-                </TouchableOpacity>
-              )}
-
-              {selectedImages.map((uri, index) => (
-                <View key={index} className="relative w-[48%] aspect-[4/5] rounded-3xl overflow-hidden bg-zinc-100 shadow-sm">
-                  <Image source={{ uri }} className="w-full h-full" resizeMode="cover" />
-                  <TouchableOpacity
-                    activeOpacity={0.8} onPress={() => removeImage(index)}
-                    className="absolute top-3 right-3 bg-black/50 p-2 rounded-full backdrop-blur-md"
-                  >
-                    <X color="#FFFFFF" size={16} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-            {errors.images && (
-              <Animated.Text entering={FadeIn} className="text-red-500 font-bold mt-4 bg-red-50 p-3 rounded-xl">
-                ⚠️ {errors.images.message}
-              </Animated.Text>
-            )}
-          </Animated.View>
-        );
-
-      case 1:
-        return (
-          <Animated.View entering={SlideInRight} exiting={SlideOutLeft} className="flex-1 mt-4">
-            <Text variant="h2" className="text-[#642714] border-none pb-0 mb-2">O que você está desapegando?</Text>
-            <Text className="text-[#8C6D62] text-base mb-8">Dê um título claro e ajude as pessoas a encontrarem seu item.</Text>
-
-            <View className="mb-8">
-              <Text className="text-[#642714] font-bold mb-3 uppercase tracking-wider text-xs">Título do anúncio</Text>
-              <Controller
-                control={control}
-                name="title"
-                render={({ field: { onChange, value } }) => (
-                  <Input
-                    placeholder="Ex: Cadeira Eames Branca"
-                    value={value}
-                    onChangeText={onChange}
-                    className={`bg-white h-16 pl-5 rounded-2xl border-2 shadow-sm ${errors.title ? 'border-red-400' : 'border-transparent focus:border-[#FF692E]'}`}
-                  />
-                )}
-              />
-              {errors.title && <Text className="text-red-500 text-xs mt-2 ml-1">{errors.title.message}</Text>}
-            </View>
-
-            <View className="mb-6">
-              <Text className="text-[#642714] font-bold mb-3 uppercase tracking-wider text-xs">Categoria</Text>
-              <Controller
-                control={control}
-                name="category"
-                render={({ field: { onChange, value } }) => (
-                  <View className="flex-row flex-wrap gap-3">
-                    {CATEGORIES.map((cat) => (
-                      <TouchableOpacity
-                        key={cat} activeOpacity={0.7} onPress={() => onChange(cat)}
-                        className={`px-5 py-3.5 rounded-2xl border-2 ${value === cat ? 'bg-[#FF692E] border-[#FF692E] shadow-md shadow-[#FF692E]/20' : 'bg-white border-zinc-100'}`}
-                      >
-                        <Text className={`font-bold ${value === cat ? 'text-white' : 'text-[#8C6D62]'}`}>{cat}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              />
-              {errors.category && <Text className="text-red-500 text-xs mt-2 ml-1">{errors.category.message}</Text>}
-            </View>
-          </Animated.View>
-        );
-
-      case 2:
-        return (
-          <Animated.View entering={SlideInRight} exiting={SlideOutLeft} className="flex-1 mt-4">
-            <Text variant="h2" className="text-[#642714] border-none pb-0 mb-2">Últimos detalhes</Text>
-            <Text className="text-[#8C6D62] text-base mb-8">Conte a história desse item para o seu futuro dono.</Text>
-
-            <View className="mb-8">
-              <Text className="text-[#642714] font-bold mb-3 uppercase tracking-wider text-xs">Condição</Text>
-              <Controller
-                control={control}
-                name="condition"
-                render={({ field: { onChange, value } }) => (
-                  <View className="flex-row flex-wrap gap-3">
-                    {CONDITIONS.map((cond) => (
-                      <TouchableOpacity
-                        key={cond} activeOpacity={0.7} onPress={() => onChange(cond)}
-                        className={`px-5 py-3.5 rounded-2xl border-2 ${value === cond ? 'bg-[#84DCD9] border-[#84DCD9] shadow-md shadow-[#84DCD9]/30' : 'bg-white border-zinc-100'}`}
-                      >
-                        <Text className={`font-bold ${value === cond ? 'text-[#642714]' : 'text-[#8C6D62]'}`}>{cond}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              />
-              {errors.condition && <Text className="text-red-500 text-xs mt-2 ml-1">{errors.condition.message}</Text>}
-            </View>
-
-            <View className="mb-6">
-              <Text className="text-[#642714] font-bold mb-3 uppercase tracking-wider text-xs">Descrição</Text>
-              <Controller
-                control={control}
-                name="description"
-                render={({ field: { onChange, value } }) => (
-                  <Input
-                    placeholder="Tempo de uso, detalhes, defeitos (se houver)..."
-                    value={value}
-                    onChangeText={onChange}
-                    multiline
-                    numberOfLines={5}
-                    textAlignVertical="top"
-                    className={`bg-white h-40 pl-5 pt-5 rounded-3xl border-2 shadow-sm ${errors.description ? 'border-red-400' : 'border-transparent focus:border-[#FF692E]'}`}
-                  />
-                )}
-              />
-              {errors.description && <Text className="text-red-500 text-xs mt-2 ml-1">{errors.description.message}</Text>}
-            </View>
-          </Animated.View>
-        );
-    }
-  };
-
-  // Cálculo da barra de progresso animada
-  const progressPercentage = ((currentStep + 1) / TOTAL_STEPS) * 100;
-
+  // ─────────────────────────────────────────────
+  // RENDER
+  // ─────────────────────────────────────────────
   return (
-    <ScreenLayout className="bg-[#FDF9F1] p-0" applyBottomInset={false}>
+    <ScreenLayout className="bg-[#FDF9F1]">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        className="flex-1"
+      >
+        {/* ── BARRA DE PROGRESSO ── */}
+        <View className="h-1 bg-zinc-100 w-full">
+          <Animated.View
+            style={progressStyle}
+            className="h-full bg-[#FF692E] rounded-full"
+          />
+        </View>
 
-      {/* CABEÇALHO COM BOTÃO VOLTAR/CANCELAR E PROGRESS BAR */}
-      <View className="px-6 pt-6 pb-2 bg-[#FDF9F1] z-10">
-        <View className="flex-row items-center justify-between mb-4">
+        {/* ── HEADER ── */}
+        <View
+          className="flex-row items-center justify-between py-4"
+          style={{ paddingHorizontal: 24 }}
+          accessibilityRole="header"
+        >
           <TouchableOpacity
-            onPress={currentStep === 0 ? () => router.back() : handlePrev}
-            className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm"
+            onPress={handlePrev}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel={
+              currentStep === 0 ? 'Voltar para o início' : 'Voltar ao passo anterior'
+            }
+            accessibilityRole="button"
+            className="w-10 h-10 bg-white rounded-full items-center justify-center shadow-sm border border-zinc-100"
           >
-            <ChevronLeft color="#642714" size={24} />
+            <ChevronLeft color="#642714" size={22} />
           </TouchableOpacity>
-          <Text className="text-[#8C6D62] font-bold text-sm uppercase tracking-widest">
-            Passo {currentStep + 1} de {TOTAL_STEPS}
+
+          {/* Contador de passos */}
+          <Text
+            className="text-[#8C6D62] text-xs font-semibold tracking-widest uppercase"
+            accessibilityLabel={`Passo ${currentStep + 1} de ${TOTAL_STEPS}`}
+          >
+            {currentStep + 1} / {TOTAL_STEPS}
           </Text>
+
+          {/* Espaço reservado para simetria */}
           <View className="w-10" />
         </View>
 
-        <View className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
-          <Animated.View
-            className="h-full bg-[#FF692E] rounded-full"
-            style={{ width: `${progressPercentage}%`, transitionProperty: 'width', transitionDuration: '300ms' }}
-          />
-        </View>
-      </View>
-
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }}>
-          {/* RENDERIZA APENAS O PASSO ATUAL */}
-          {renderStepContent()}
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      {/* RODAPÉ STICKY COM BOTÕES DE AÇÃO */}
-      <View className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-zinc-100 flex-row justify-between items-center" style={{ paddingBottom: Platform.OS === 'ios' ? 34 : 24 }}>
-        <Button
-          variant="ghost"
-          onPress={currentStep === 0 ? () => router.back() : handlePrev}
-          className="flex-1 mr-4 h-14"
+        {/* ── CONTEÚDO ANIMADO POR PASSO ── */}
+        <Animated.View
+          key={currentStep}
+          entering={
+            direction === 'forward'
+              ? SlideInRight.duration(320).springify()
+              : FadeIn.duration(250)
+          }
+          exiting={SlideOutLeft.duration(200)}
+          className="flex-1 -mx-6"
         >
-          <Text className="text-[#8C6D62] font-bold text-base">
-            {currentStep === 0 ? 'Cancelar' : 'Voltar'}
-          </Text>
-        </Button>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 120 }}
+          >
+            {/* ── TÍTULO EDITORIAL DO PASSO ── */}
+            <View className="mt-2 mb-8">
+              <Text
+                className="text-[#642714] font-bold leading-tight mb-2"
+                style={{ fontSize: 32, lineHeight: 38 }}
+                accessibilityRole="header"
+              >
+                {copy.title}
+              </Text>
+              <Text className="text-[#8C6D62] text-sm leading-relaxed">
+                {copy.subtitle}
+              </Text>
+            </View>
 
-        <Button
-          onPress={handleNext}
-          disabled={createListing.isPending}
-          className="flex-2 w-2/3 h-14 bg-[#FF692E] rounded-2xl shadow-lg shadow-[#FF692E]/30"
+            {/* ══════════════════════════════════
+                PASSO 1 — FOTOS
+            ══════════════════════════════════ */}
+            {currentStep === 0 && (
+              <View>
+                <View className="flex-row flex-wrap gap-3">
+                  {/* Botão de adicionar foto */}
+                  {selectedImages.length < 5 && (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={pickImage}
+                      accessibilityLabel="Adicionar foto"
+                      accessibilityRole="button"
+                      accessibilityHint="Abre a galeria para selecionar uma imagem"
+                      className="bg-white border-2 border-dashed border-[#FF692E]/40 rounded-2xl items-center justify-center "
+                      style={{ width: '50%', aspectRatio: 4 / 5 }}
+                    >
+                        <Camera color="#FF692E" size={22} />
+                      <Text className="text-[#FF692E] font-bold text-xs">
+                        Adicionar
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* Miniaturas das fotos */}
+                  {selectedImages.map((uri, idx) => (
+                    <View
+                      key={uri}
+                      className="relative rounded-2xl overflow-hidden bg-zinc-100 shadow-sm"
+                      style={{ width: '30%', aspectRatio: 4 / 5 }}
+                      accessibilityLabel={`Foto ${idx + 1} de ${selectedImages.length}`}
+                    >
+                      <Image
+                        source={{ uri }}
+                        className="w-full h-full"
+                        resizeMode="cover"
+                        accessibilityIgnoresInvertColors
+                      />
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => removeImage(idx)}
+                        accessibilityLabel={`Remover foto ${idx + 1}`}
+                        accessibilityRole="button"
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full"
+                      >
+                        <X color="#fff" size={13} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Erro de foto */}
+                {errors.images && (
+                  <Animated.View entering={FadeIn.duration(200)} className="mt-3">
+                    <Text className="text-red-500 text-xs font-semibold">
+                      ⚠️ {errors.images.message}
+                    </Text>
+                  </Animated.View>
+                )}
+
+                {/* Dica contextual */}
+                {selectedImages.length === 0 && (
+                  <Animated.View
+                    entering={FadeIn.delay(300).duration(400)}
+                    className="mt-6 bg-[#FF692E]/5 rounded-2xl p-4 border border-[#FF692E]/10"
+                  >
+                    <Text className="text-[#8C6D62] text-xs leading-relaxed">
+                      💡 <Text className="font-semibold text-[#642714]">Dica:</Text> Fotos com boa
+                      iluminação natural aumentam as chances do item ser retirado.
+                    </Text>
+                  </Animated.View>
+                )}
+
+                {/* Contador de fotos */}
+                {selectedImages.length > 0 && (
+                  <Text className="text-[#8C6D62] text-xs mt-3">
+                    {selectedImages.length} de 5 fotos adicionadas
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {/* ══════════════════════════════════
+                PASSO 2 — TÍTULO E CATEGORIA
+            ══════════════════════════════════ */}
+            {currentStep === 1 && (
+              <View>
+                {/* Título */}
+                <View className="mb-8">
+                  <Text
+                    className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3"
+                    accessibilityRole="none"
+                  >
+                    Título
+                  </Text>
+                  <Controller
+                    control={control}
+                    name="title"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <Input
+                        placeholder="Ex: Cadeira de escritório cinza"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        returnKeyType="done"
+                        maxLength={60}
+                        accessibilityLabel="Título do item"
+                        accessibilityHint="Descreva o item em poucas palavras"
+                        className={`bg-white h-14 pl-5 rounded-2xl border-2 shadow-sm text-[#3D2214] ${
+                          errors.title
+                            ? 'border-red-400'
+                            : 'border-transparent focus:border-[#FF692E]'
+                        }`}
+                      />
+                    )}
+                  />
+                  {errors.title ? (
+                    <Text className="text-red-500 text-xs mt-2">
+                      {errors.title.message}
+                    </Text>
+                  ) : (
+                    <Text className="text-[#B0978E] text-xs mt-2">
+                      Seja específico: marca, cor e modelo ajudam bastante.
+                    </Text>
+                  )}
+                </View>
+
+                {/* Categoria */}
+                <View>
+                  <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">
+                    Categoria
+                  </Text>
+                  <Controller
+                    control={control}
+                    name="category"
+                    render={({ field: { onChange, value } }) => (
+                      <View
+                        className="flex-row flex-wrap gap-2"
+                        accessibilityRole="radiogroup"
+                        accessibilityLabel="Categoria do item"
+                      >
+                        {CATEGORIES.map((cat) => {
+                          const isSelected = value === cat;
+                          return (
+                            <TouchableOpacity
+                              key={cat}
+                              activeOpacity={0.7}
+                              onPress={() => onChange(cat)}
+                              accessibilityRole="radio"
+                              accessibilityState={{ checked: isSelected }}
+                              accessibilityLabel={cat}
+                              className={`px-5 py-3 rounded-2xl border-2 ${
+                                isSelected
+                                  ? 'bg-[#FF692E] border-[#FF692E]'
+                                  : 'bg-white border-zinc-100'
+                              }`}
+                            >
+                              <Text
+                                className={`font-semibold text-sm ${
+                                  isSelected ? 'text-white' : 'text-[#8C6D62]'
+                                }`}
+                              >
+                                {cat}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  />
+                  {errors.category && (
+                    <Text className="text-red-500 text-xs mt-2">
+                      {errors.category.message}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* ══════════════════════════════════
+                PASSO 3 — CONDIÇÃO E DESCRIÇÃO
+            ══════════════════════════════════ */}
+            {currentStep === 2 && (
+              <View>
+                {/* Estado do item */}
+                <View className="mb-8">
+                  <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">
+                    Estado do item
+                  </Text>
+                  <Controller
+                    control={control}
+                    name="condition"
+                    render={({ field: { onChange, value } }) => (
+                      <View
+                        className="gap-3"
+                        accessibilityRole="radiogroup"
+                        accessibilityLabel="Estado de conservação"
+                      >
+                        {CONDITIONS.map((cond) => {
+                          const isSelected = value === cond;
+                          return (
+                            <TouchableOpacity
+                              key={cond}
+                              activeOpacity={0.7}
+                              onPress={() => onChange(cond)}
+                              accessibilityRole="radio"
+                              accessibilityState={{ checked: isSelected }}
+                              accessibilityLabel={cond}
+                              className={`flex-row items-center px-5 rounded-2xl border-2 ${
+                                isSelected
+                                  ? 'bg-[#84DCD9]/15 border-[#84DCD9]'
+                                  : 'bg-white border-zinc-100'
+                              }`}
+                              style={{ height: 56 }}
+                            >
+                              {/* Radio visual */}
+                              <View
+                                className={`w-5 h-5 rounded-full border-2 mr-4 items-center justify-center ${
+                                  isSelected ? 'border-[#84DCD9]' : 'border-zinc-300'
+                                }`}
+                              >
+                                {isSelected && (
+                                  <View className="w-2.5 h-2.5 rounded-full bg-[#84DCD9]" />
+                                )}
+                              </View>
+                              <Text
+                                className={`font-semibold text-sm ${
+                                  isSelected ? 'text-[#642714]' : 'text-[#8C6D62]'
+                                }`}
+                              >
+                                {cond}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  />
+                  {errors.condition && (
+                    <Text className="text-red-500 text-xs mt-2">
+                      {errors.condition.message}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Descrição */}
+                <View>
+                  <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">
+                    Mais detalhes
+                  </Text>
+                  <Controller
+                    control={control}
+                    name="description"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <Input
+                        placeholder="Tempo de uso, marcas, motivo do desapego..."
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        multiline
+                        numberOfLines={5}
+                        textAlignVertical="top"
+                        maxLength={500}
+                        accessibilityLabel="Descrição do item"
+                        accessibilityHint="Descreva com detalhes o estado e histórico do item"
+                        className={`bg-white pl-5 pt-4 rounded-2xl border-2 shadow-sm text-[#3D2214] ${
+                          errors.description
+                            ? 'border-red-400'
+                            : 'border-transparent focus:border-[#FF692E]'
+                        }`}
+                        style={{ height: 140 }}
+                      />
+                    )}
+                  />
+                  {errors.description ? (
+                    <Text className="text-red-500 text-xs mt-2">
+                      {errors.description.message}
+                    </Text>
+                  ) : (
+                    <Text className="text-[#B0978E] text-xs mt-2">
+                      Quanto mais detalhes, menos perguntas você recebe.
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+          </ScrollView>
+        </Animated.View>
+
+        {/* ── CTA FIXO NO RODAPÉ ── */}
+        <View
+          className="absolute bottom-0 left-0 right-0 bg-[#FDF9F1]/95"
+          style={{
+            paddingHorizontal: 24,
+            paddingBottom: Platform.OS === 'ios' ? 36 : 24,
+            paddingTop: 16,
+            borderTopWidth: 1,
+            borderTopColor: 'rgba(0,0,0,0.06)',
+          }}
         >
-          {createListing.isPending ? (
-            <Text className="text-white font-bold text-lg">Processando...</Text>
-          ) : (
-            <Text className="text-white font-bold text-lg">
-              {currentStep === TOTAL_STEPS - 1 ? 'Publicar' : 'Próximo'}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={handleNext}
+            disabled={isSubmitting}
+            accessibilityRole="button"
+            accessibilityLabel={isLastStep ? 'Publicar desapego' : 'Continuar'}
+            accessibilityState={{ disabled: isSubmitting }}
+            className="w-full h-14 bg-[#FF692E] rounded-2xl items-center justify-center"
+            style={{
+              shadowColor: '#FF692E',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 16,
+              elevation: 8,
+            }}
+          >
+            <Text className="text-white font-bold text-base">
+              {uploadState === 'uploading'
+                ? `Enviando fotos...`
+                : uploadState === 'saving'
+                ? 'Publicando...'
+                : isLastStep
+                ? 'Publicar desapego'
+                : 'Continuar'}
             </Text>
-          )}
-        </Button>
-      </View>
-
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </ScreenLayout>
   );
 }
