@@ -1,0 +1,184 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "pt-BR"
+
+tone_instructions: >
+  Pense como um Product Engineer Sênior em um app mobile de marketplace sustentável.
+  Seja crítico, direto e orientado a impacto real no negócio e no usuário.
+  Priorize confiança, segurança, performance mobile e experiência de negociação.
+  Evite sugestões genéricas.
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+
+  high_level_summary_instructions: |
+    Estruture SEMPRE a review nas seguintes seções:
+
+    - Arquitetura Mobile (React Native)
+    - Performance (Renderização, Listas, Re-renders)
+    - Consumo de Memória e Recursos
+    - UX Mobile (Fluxo de troca e negociação)
+    - Acessibilidade
+    - Offline-first e Resiliência
+    - Segurança e Anti-fraude
+    - Regras de Negócio (Trocas e Reuso)
+    - Qualidade de Código
+    - Escalabilidade
+    - Sugestões de Produto
+
+    Para cada problema:
+    - Classifique como: Alto, Médio ou Baixo impacto
+    - Explique impacto REAL (ex: perda de confiança, churn, fraude, travamento)
+    - Sugira solução prática
+    - Inclua exemplo de código quando possível
+
+  path_instructions:
+    - path: "src/features/trade/**"
+      instructions: |
+        FOCO CRÍTICO (CORE DO PRODUTO):
+
+        🔁 Fluxo de Troca:
+        - Estados inconsistentes (pendente, aceito, recusado)
+        - Falta de validação de transição de estado
+        - Possibilidade de race conditions
+
+        🤝 Confiança:
+        - Falta de confirmação dupla nas trocas
+        - Ausência de logs/auditoria
+        - Falta de histórico de negociação
+
+        🚨 Anti-fraude:
+        - Usuário podendo burlar regras
+        - Falta de validação no backend
+        - Dados sensíveis expostos
+
+    - path: "src/features/chat/**"
+      instructions: |
+        💬 Negociação:
+
+        - Mensagens sem feedback de envio
+        - Falta de estado "enviando", "entregue", "lido"
+        - Possível spam ou flooding
+        - Falta de debounce/throttle
+
+        ⚠️ UX:
+        - Scroll quebrado
+        - Input travando
+        - Falta de persistência de mensagens
+
+    - path: "src/features/listings/**"
+      instructions: |
+        📦 Listagem de Produtos:
+
+        - Uso incorreto de FlatList (CRÍTICO)
+        - Falta de paginação/infinite scroll
+        - Imagens pesadas sem otimização
+        - Falta de placeholder/loading
+
+        🌱 Sustentabilidade:
+        - Exibir impacto ambiental (se aplicável)
+        - Falta de contexto sobre reuso do item
+
+    - path: "src/**/*.tsx"
+      instructions: |
+        🔁 Renderização:
+        - Re-renders desnecessários
+        - Props instáveis
+        - Componentes grandes
+
+        📱 Mobile:
+        - Touch targets pequenos
+        - Falta de feedback visual
+        - Animações pesadas
+
+        🎨 Tailwind (NativeWind):
+        - Inconsistência visual
+        - Classes duplicadas
+        - Falta de padronização
+
+        ♿ Acessibilidade:
+        - Falta de accessibilityLabel
+        - Problemas de contraste
+
+    - path: "src/**/*.ts"
+      instructions: |
+        🏗️ Arquitetura:
+        - Acoplamento alto
+        - Código não reutilizável
+        - Falta de separação (service vs UI)
+
+        🔄 Estado:
+        - Estado global mal estruturado
+        - Prop drilling
+        - Dados não normalizados
+
+        🌐 API:
+        - Falta de retry
+        - Falta de tratamento de erro
+        - Falta de cache
+
+    - path: "src/services/**"
+      instructions: |
+        🔐 Segurança:
+
+        - Dados sensíveis expostos
+        - Tokens inseguros
+        - Falta de validação server-side
+
+        🌍 Resiliência:
+        - Falta de fallback offline
+        - Requests sem timeout
+
+    - path: "**/*"
+      instructions: |
+        Sempre validar:
+
+        ⚡ Performance:
+        - Memory leaks
+        - Re-renders desnecessários
+
+        🔋 Mobile:
+        - Impacto em bateria
+        - Uso excessivo de CPU
+
+        🌐 Offline-first:
+        - O app quebra sem internet?
+        - Há cache/local persistence?
+
+        🤝 Confiança:
+        - Fluxos podem gerar dúvida no usuário?
+        - Há risco de erro humano?
+
+  auto_review:
+    base_branches: [".*"]
+
+  path_filters:
+    - "!**/*.md"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/android/**/build/**"
+    - "!**/ios/**/build/**"
+    - "!**/coverage/**"
+    - "!**/*.lock"
+    - "!**/generated/**"
+
+  labeling_instructions: |
+    Use labels apropriadas:
+
+    - performance
+    - ux
+    - accessibility
+    - security
+    - architecture
+    - refactor
+    - product
+    - memory
+    - mobile
+    - offline
+    - api
+    - state-management
+    - sustainability
+    - trust
+    - anti-fraud
+    - marketplace
