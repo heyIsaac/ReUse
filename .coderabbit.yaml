@@ -160,20 +160,36 @@ reviews:
     - "!**/*.lock"
     - "!**/generated/**"
 
-  labeling_instructions:
-    - performance
-    - ux
-    - accessibility
-    - security
-    - architecture
-    - refactor
-    - product
-    - memory
-    - mobile
-    - offline
-    - api
-    - state-management
-    - sustainability
-    - trust
-    - anti-fraud
-    - marketplace
+ labeling_instructions:
++    - label: "performance"
++      instructions: "Use when PR changes rendering, list virtualization, expensive computations, or runtime responsiveness."
++    - label: "ux"
++      instructions: "Use when PR changes user flows, interaction feedback, or navigation behavior."
++    - label: "accessibility"
++      instructions: "Use when PR affects accessibility semantics, screen reader support, contrast, or touch targets."
++    - label: "security"
++      instructions: "Use when PR touches auth, authorization, data exposure, token handling, or anti-abuse logic."
++    - label: "architecture"
++      instructions: "Use when PR changes module boundaries, layering, or separation of concerns."
++    - label: "refactor"
++      instructions: "Use for internal code improvements without intended user-facing behavior changes."
++    - label: "product"
++      instructions: "Use when PR introduces or changes business-facing product behavior."
++    - label: "memory"
++      instructions: "Use when PR impacts memory allocation, retention, or leak risk."
++    - label: "mobile"
++      instructions: "Use when PR is specific to mobile platform behavior or constraints."
++    - label: "offline"
++      instructions: "Use when PR changes caching, persistence, retry/fallback, or offline-first flows."
++    - label: "api"
++      instructions: "Use when PR modifies API contracts, network handling, or service integration."
++    - label: "state-management"
++      instructions: "Use when PR changes state shape, transitions, synchronization, or store architecture."
++    - label: "sustainability"
++      instructions: "Use when PR adds/changes sustainability context or reuse-impact messaging."
++    - label: "trust"
++      instructions: "Use when PR affects user trust signals, auditability, or confidence during trade flows."
++    - label: "anti-fraud"
++      instructions: "Use when PR strengthens or modifies fraud prevention and abuse controls."
++    - label: "marketplace"
++      instructions: "Use when PR impacts listings, trade lifecycle, negotiation, or marketplace core rules."
