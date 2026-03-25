@@ -160,13 +160,13 @@ reviews:
     - "!**/*.lock"
     - "!**/generated/**"
 
- labeling_instructions:
-+    - label: "performance"
-+      instructions: "Use when PR changes rendering, list virtualization, expensive computations, or runtime responsiveness."
-+    - label: "ux"
-+      instructions: "Use when PR changes user flows, interaction feedback, or navigation behavior."
-+    - label: "accessibility"
-+      instructions: "Use when PR affects accessibility semantics, screen reader support, contrast, or touch targets."
+  labeling_instructions:
+    - label: "performance"
+      instructions: "Use when PR changes rendering, list virtualization, expensive computations, or runtime responsiveness."
+    - label: "ux"
+      instructions: "Use when PR changes user flows, interaction feedback, or navigation behavior."
+    - label: "accessibility"
+      instructions: "Use when PR affects accessibility semantics, screen reader support, contrast, or touch targets."
 +    - label: "security"
 +      instructions: "Use when PR touches auth, authorization, data exposure, token handling, or anti-abuse logic."
 +    - label: "architecture"
