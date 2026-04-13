@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter as useExpoRouter } from 'expo-router';
 import { Camera, ChevronLeft, ImageIcon, X } from 'lucide-react-native';
@@ -131,7 +131,7 @@ export default function CreateListing() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    AsyncStorage.getItem(DRAFT_KEY).then((saved) => {
+    SecureStore.getItemAsync(DRAFT_KEY).then((saved) => {
       if (!saved) return;
       try {
         const draft = JSON.parse(saved);
@@ -148,7 +148,7 @@ export default function CreateListing() {
     debounceRef.current = setTimeout(() => {
       const { title, category, condition, description } = allFields;
       if (title || category || condition || description) {
-        AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ title, category, condition, description }));
+        SecureStore.setItemAsync(DRAFT_KEY, JSON.stringify({ title, category, condition, description }));
       }
     }, 1000);
   }, [allFields.title, allFields.category, allFields.condition, allFields.description]);
@@ -245,7 +245,7 @@ export default function CreateListing() {
       setUploadState('saving');
       await createListing.mutateAsync({ ...data, images: imageUrls });
 
-      await AsyncStorage.removeItem(DRAFT_KEY);
+      await SecureStore.deleteItemAsync(DRAFT_KEY);
       alert('Desapego publicado com sucesso! 🎉');
       reset();
       setCurrentStep(0);
