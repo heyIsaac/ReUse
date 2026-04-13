@@ -26,6 +26,7 @@ import * as z from 'zod';
 import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
+import { useGetCategories } from '@/src/services/useCategories';
 import { useCreateListing } from '@/src/services/useListings';
 import { uploadImages } from '@/src/services/supabaseStorage';
 
@@ -50,7 +51,7 @@ type DonateFormData = z.infer<typeof donateSchema>;
 // ─────────────────────────────────────────────
 // 2. CONSTANTES
 // ─────────────────────────────────────────────
-const CATEGORIES = ['Roupas', 'Calçados', 'Eletrônicos', 'Móveis', 'Livros'];
+const FALLBACK_CATEGORIES = ['Roupas', 'Calçados', 'Eletrônicos', 'Móveis', 'Livros'];
 const CONDITIONS = ['Novo', 'Seminovo', 'Com marcas de uso'];
 const TOTAL_STEPS = 3;
 
@@ -87,6 +88,8 @@ const STEP_COPY = [
 export default function CreateListing() {
   const router = useExpoRouter();
   const createListing = useCreateListing();
+  const { data: dbCategories } = useGetCategories();
+  const CATEGORIES = dbCategories?.map(c => c.name) ?? FALLBACK_CATEGORIES;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
