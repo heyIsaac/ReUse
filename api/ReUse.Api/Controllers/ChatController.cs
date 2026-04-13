@@ -1,12 +1,8 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ReUse.Api.Data;
-
 using ReUse.Api.Models;
 
 namespace ReUse.Api.Controllers;
@@ -20,37 +16,127 @@ public class ChatController : ControllerBase
 
     public ChatController(AppDbContext context) { _context = context; }
 
-    // ROTA 1: Quando alguém clica no botão "Entrar em Contato" no item
+    private Guid? GetUserId()
+    {
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return Guid.TryParse(sub, out var id) ? id : null;
+    }
+
+    [HttpGet("rooms")]
+    public async Task<IActionResult> GetMyRooms()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var rooms = await _context.ChatRooms
+            .Where(r => r.OwnerId == userId || r.InterestedId == userId)
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new
+            {
+                r.Id,
+                r.Status,
+                r.CreatedAt,
+                Listing = new
+                {
+                    r.ListingId,
+                    _context.Listings.First(l => l.Id == r.ListingId).Title,
+                    Image = _context.Listings.First(l => l.Id == r.ListingId).Images.FirstOrDefault()
+                },
+                OtherUser = r.OwnerId == userId
+                    ? new { Id = r.InterestedId, _context.Profiles.First(p => p.Id == r.InterestedId).Name, _context.Profiles.First(p => p.Id == r.InterestedId).AvatarUrl }
+                    : new { Id = r.OwnerId, _context.Profiles.First(p => p.Id == r.OwnerId).Name, _context.Profiles.First(p => p.Id == r.OwnerId).AvatarUrl },
+                LastMessage = _context.ChatMessages
+                    .Where(m => m.ChatRoomId == r.Id)
+                    .OrderByDescending(m => m.CreatedAt)
+                    .Select(m => new { m.Text, m.CreatedAt, m.SenderId })
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        return Ok(rooms);
+    }
+
+    [HttpGet("{roomId}")]
+    public async Task<IActionResult> GetRoom(Guid roomId)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var room = await _context.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId);
+        if (room == null) return NotFound();
+        if (room.OwnerId != userId && room.InterestedId != userId) return Forbid();
+
+        var otherId = room.OwnerId == userId ? room.InterestedId : room.OwnerId;
+        var otherUser = await _context.Profiles.FindAsync(otherId);
+        var listing = await _context.Listings.FindAsync(room.ListingId);
+
+        return Ok(new
+        {
+            room.Id,
+            room.Status,
+            room.OwnerId,
+            room.InterestedId,
+            Listing = listing == null ? null : new { listing.Id, listing.Title, Image = listing.Images.FirstOrDefault() },
+            OtherUser = otherUser == null ? null : new { otherUser.Id, otherUser.Name, otherUser.AvatarUrl }
+        });
+    }
+
     [HttpPost("start")]
     public async Task<IActionResult> StartChat([FromBody] StartChatRequest req)
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-        if (!Guid.TryParse(sub, out var myId)) return Unauthorized();
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
 
-        // Verifica se a sala já existe
         var existingRoom = await _context.ChatRooms
-            .FirstOrDefaultAsync(r => r.ListingId == req.ListingId && r.InterestedId == myId);
+            .FirstOrDefaultAsync(r => r.ListingId == req.ListingId && r.InterestedId == userId);
 
         if (existingRoom != null) return Ok(new { roomId = existingRoom.Id });
 
-        // Se não existir, cria uma nova sala
-        var newRoom = new ChatRoom { ListingId = req.ListingId, OwnerId = req.OwnerId, InterestedId = myId };
+        var newRoom = new ChatRoom
+        {
+            ListingId = req.ListingId,
+            OwnerId = req.OwnerId,
+            InterestedId = userId.Value
+        };
         _context.ChatRooms.Add(newRoom);
         await _context.SaveChangesAsync();
 
         return Ok(new { roomId = newRoom.Id });
     }
 
-    // ROTA 2: Pega o histórico quando abre a tela
     [HttpGet("{roomId}/messages")]
     public async Task<IActionResult> GetHistory(Guid roomId)
     {
         var messages = await _context.ChatMessages
             .Where(m => m.ChatRoomId == roomId)
-            .OrderBy(m => m.CreatedAt) // Mais antigas primeiro
+            .OrderBy(m => m.CreatedAt)
             .ToListAsync();
         return Ok(messages);
     }
+
+    [HttpPut("{roomId}/complete")]
+    public async Task<IActionResult> CompleteChat(Guid roomId)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var room = await _context.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId);
+        if (room == null) return NotFound();
+        if (room.OwnerId != userId && room.InterestedId != userId) return Forbid();
+
+        room.Status = "completed";
+
+        var listing = await _context.Listings.FindAsync(room.ListingId);
+        if (listing != null) listing.Condition = "Entregue";
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Negociação concluída!", status = room.Status });
+    }
 }
 
-public class StartChatRequest { public int ListingId { get; set; } public Guid OwnerId { get; set; } }
+public class StartChatRequest
+{
+    public int ListingId { get; set; }
+    public Guid OwnerId { get; set; }
+}

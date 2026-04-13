@@ -19,10 +19,14 @@ public class ChatHub : Hub
         _context = context;
     }
 
-    // 1. O Celular pede para entrar na "Sala"
     public async Task JoinChatGroup(string chatRoomId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, chatRoomId);
+    }
+
+    public async Task LeaveChatGroup(string chatRoomId)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, chatRoomId);
     }
 
     // 2. O Celular envia uma mensagem
