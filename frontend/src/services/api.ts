@@ -1,17 +1,17 @@
 import axios from "axios";
 import { router } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 
 import { env } from "@/src/config/env";
+import { supabase } from "./supabase";
 
 export const api = axios.create({
   baseURL: env.API_URL,
   timeout: 50000,
 });
 
-
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync("reuse_jwt_token");
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -21,15 +21,10 @@ api.interceptors.request.use(async (config) => {
 });
 
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   async (error) => {
     if (error.response && error.response.status === 401) {
-      console.error("🚨 [API] Token expirado ou inválido. Deslogando usuário...");
-
-      await SecureStore.deleteItemAsync("reuse_jwt_token");
-
+      await supabase.auth.signOut();
       router.replace("/(auth)/login");
     }
 

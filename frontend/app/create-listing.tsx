@@ -26,7 +26,7 @@ import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { useCreateListing } from '@/src/services/useListings';
-import { uploadImagesToCloudinary } from '@/src/services/cloudinaryUpload';
+import { uploadImages } from '@/src/services/supabaseStorage';
 
 // ─────────────────────────────────────────────
 // 1. SCHEMA
@@ -178,13 +178,11 @@ export default function CreateListing() {
   // ── Submissão final ──
   const onSubmit = async (data: DonateFormData) => {
     try {
-      // Phase 1: upload photos directly to Cloudinary
       setUploadState('uploading');
-      const cloudinaryUrls = await uploadImagesToCloudinary(data.images);
+      const imageUrls = await uploadImages(data.images);
 
-      // Phase 2: save the listing with the final CDN URLs
       setUploadState('saving');
-      await createListing.mutateAsync({ ...data, images: cloudinaryUrls });
+      await createListing.mutateAsync({ ...data, images: imageUrls });
 
       alert('Desapego publicado com sucesso! 🎉');
       reset();

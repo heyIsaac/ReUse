@@ -1,4 +1,4 @@
-import { cloudinaryThumb } from "@/src/services/cloudinaryUpload";
+import { getPublicUrl } from "@/src/services/supabaseStorage";
 import { Listing } from "@/src/services/useListings";
 import { useRouter } from "expo-router";
 import { Heart, MapPin } from "lucide-react-native";
@@ -9,7 +9,7 @@ import { Text } from '@/components/ui/text';
 export function ProductCard({ item }: { item: Listing }) {
   const router = useRouter();
   const thumbnailUrl = item.images?.[0]
-    ? cloudinaryThumb(item.images[0], 400, 500)
+    ? getPublicUrl(item.images[0], 400, 500)
     : null;
 
   // Condition badge color

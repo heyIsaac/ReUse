@@ -1,6 +1,6 @@
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useRouter as useExpoRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
+import { supabase } from '@/src/services/supabase';
 import {
   Camera,
   ChevronRight,
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     try {
-      await SecureStore.deleteItemAsync("reuse_jwt_token");
+      await supabase.auth.signOut();
       router.replace("/(auth)/login");
     } catch (error) {
       console.error("Erro ao fazer logout", error);

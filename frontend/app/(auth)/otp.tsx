@@ -1,5 +1,4 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store"; // Cofre nativo
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,7 +10,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@/components/ui/text";
-import { api } from "@/src/services/api";
+import { supabase } from "@/src/services/supabase";
 import { StatusBar } from "expo-status-bar";
 import { ChevronLeft } from "lucide-react-native";
 
@@ -21,7 +20,6 @@ export default function OtpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Resgata o email passado via URL pelo login.tsx
   const { email } = useLocalSearchParams<{ email: string }>();
 
   const [code, setCode] = useState("");
@@ -43,29 +41,32 @@ export default function OtpScreen() {
     setHasError(false);
 
     try {
-      // 1. Envia o código e o e-mail para o C# validar
-      const response = await api.post("/auth/verify-otp", {
-        email: email,
-        code: code,
+      const { error } = await supabase.auth.verifyOtp({
+        email: email!,
+        token: code,
+        type: "email",
       });
 
-      // 2. Extrai o Token JWT da resposta
-      const { token } = response.data;
-
-      if (token) {
-        // 3. Salva no cofre protegido do iOS/Android
-        await SecureStore.setItemAsync("reuse_jwt_token", token);
-        console.log("MÁGICA FEITA! Token salvo na biometria do sistema.");
-
-        router.replace("/(tabs)");
+      if (error) {
+        console.error("Código inválido:", error.message);
+        setHasError(true);
+        setCode("");
+        return;
       }
+
+      router.replace("/(tabs)");
     } catch (error) {
       console.error("Código inválido", error);
       setHasError(true);
-      setCode(""); // Limpa o input se errar
+      setCode("");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResend = async () => {
+    if (!email) return;
+    await supabase.auth.signInWithOtp({ email });
   };
 
   return (
@@ -97,7 +98,6 @@ export default function OtpScreen() {
           <Text className="text-base text-zinc-500 mb-2">
             A verification code has been sent to
           </Text>
-          {/* E-mail dinâmico */}
           <Text className="text-base font-bold text-zinc-900 mb-10">
             {email || "email@desconhecido.com"}
           </Text>
@@ -111,7 +111,6 @@ export default function OtpScreen() {
                   index === CODE_LENGTH - 1 && code.length === CODE_LENGTH;
                 const isActive = isCurrent || isLastFilled;
 
-                // Fica vermelho se a API retornar erro
                 let borderColor = "border-zinc-200 bg-zinc-50";
                 if (isActive) borderColor = "border-emerald-500 bg-emerald-50";
                 if (hasError) borderColor = "border-red-500 bg-red-50";
@@ -135,7 +134,7 @@ export default function OtpScreen() {
               value={code}
               onChangeText={(text) => {
                 setCode(text.replace(/[^0-9]/g, ""));
-                setHasError(false); // Remove o vermelho ao digitar de novo
+                setHasError(false);
               }}
               maxLength={CODE_LENGTH}
               keyboardType="number-pad"
@@ -149,10 +148,7 @@ export default function OtpScreen() {
             <Text className="text-zinc-500 mr-1">
               Didn&apos;t receive code?
             </Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => console.log("Reenviando OTP...")}
-            >
+            <TouchableOpacity activeOpacity={0.7} onPress={handleResend}>
               <Text className="text-emerald-600 font-bold underline">
                 Resend
               </Text>
