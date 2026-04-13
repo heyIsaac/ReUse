@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Favorite> Favorites { get; set; }
+    public DbSet<Rating> Ratings { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,5 +26,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<ChatMessage>().ToTable("chat_messages");
         modelBuilder.Entity<Category>().ToTable("categories");
         modelBuilder.Entity<Favorite>().ToTable("favorites");
+        modelBuilder.Entity<Rating>().ToTable("ratings");
+        modelBuilder.Entity<Notification>().ToTable("notifications");
     }
 }

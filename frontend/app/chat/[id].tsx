@@ -130,6 +130,7 @@ export default function ChatRoom() {
               await queryClient.invalidateQueries({ queryKey: ['chatRoom', chatRoomId] });
               await queryClient.invalidateQueries({ queryKey: ['chatRooms'] });
               await queryClient.invalidateQueries({ queryKey: ['listings'] });
+              router.push(`/rate?chatRoomId=${chatRoomId}&userName=${encodeURIComponent(room?.otherUser?.name || 'Usuário')}`);
             } catch (err) {
               console.error('Erro ao completar:', err);
               alert('Erro ao marcar como entregue.');

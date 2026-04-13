@@ -103,6 +103,15 @@ export default function RegisterScreen() {
         gender,
       });
 
+      await supabase.from("notifications").insert([
+        {
+          user_id: user.id,
+          type: "welcome",
+          title: "Bem-vindo ao ReUse!",
+          body: "Que bom ter você aqui! Comece publicando seu primeiro desapego — é rápido e faz diferença.",
+        },
+      ]);
+
       await queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       router.replace("/(tabs)");
     } catch (error) {
