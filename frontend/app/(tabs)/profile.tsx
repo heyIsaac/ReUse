@@ -146,9 +146,9 @@ export default function ProfileScreen() {
           <View className="bg-white rounded-3xl overflow-hidden">
             <MenuItem icon={Package} title="Meus Anúncios" badge={myListingsCount > 0 ? `${myListingsCount} ${myListingsCount === 1 ? 'ativo' : 'ativos'}` : undefined} onPress={() => router.push('/my-listings')} />
             <View className="h-[1px] bg-zinc-50 mx-4" />
-            <MenuItem icon={Heart} title="Itens Salvos" />
+            <MenuItem icon={Heart} title="Itens Salvos" onPress={() => router.push('/favorites')} />
             <View className="h-[1px] bg-zinc-50 mx-4" />
-            <MenuItem icon={Settings} title="Configurações" />
+            <MenuItem icon={Settings} title="Configurações" onPress={() => router.push('/settings')} />
             <View className="h-[1px] bg-zinc-50 mx-4" />
             <MenuItem icon={CircleHelp} title="Ajuda e Suporte" />
           </View>

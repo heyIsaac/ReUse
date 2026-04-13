@@ -1,3 +1,4 @@
+import { useGetFavoriteIds, useToggleFavorite } from "@/src/hooks/useFavorites";
 import { useUserProfile } from "@/src/hooks/useUserProfile";
 import { getPublicUrl } from "@/src/services/supabaseStorage";
 import { Listing } from "@/src/services/useListings";
@@ -10,7 +11,11 @@ import { Text } from '@/components/ui/text';
 export function ProductCard({ item }: { item: Listing }) {
   const router = useRouter();
   const { data: currentUser } = useUserProfile();
+  const { data: favoriteIds } = useGetFavoriteIds();
+  const toggleFavorite = useToggleFavorite();
+
   const isOwner = currentUser?.id === item.owner?.id;
+  const isFavorite = favoriteIds?.includes(item.id) ?? false;
 
   const thumbnailUrl = item.images?.[0]
     ? getPublicUrl(item.images[0], 400, 500)
@@ -22,6 +27,10 @@ export function ProductCard({ item }: { item: Listing }) {
       : item.condition === 'Seminovo'
       ? '#F8A720'
       : '#8C6D62';
+
+  const handleToggleFavorite = () => {
+    toggleFavorite.mutate({ listingId: item.id, isFavorite });
+  };
 
   return (
     <TouchableOpacity
@@ -44,8 +53,16 @@ export function ProductCard({ item }: { item: Listing }) {
             <Text className="text-white text-[10px] font-bold">Seu</Text>
           </View>
         ) : (
-          <TouchableOpacity className="absolute top-2 right-2 bg-white/90 p-2 rounded-full">
-            <Heart color="#FF692E" size={18} strokeWidth={2.5} />
+          <TouchableOpacity
+            onPress={handleToggleFavorite}
+            className="absolute top-2 right-2 bg-white/90 p-2 rounded-full"
+          >
+            <Heart
+              color="#FF692E"
+              size={18}
+              strokeWidth={2.5}
+              fill={isFavorite ? '#FF692E' : 'transparent'}
+            />
           </TouchableOpacity>
         )}
 
