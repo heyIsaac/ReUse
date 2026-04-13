@@ -8,11 +8,9 @@ import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, TextInput,
 
 import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Text } from '@/components/ui/text';
+import { env } from '@/src/config/env';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
-import { api } from '@/src/services/api'; // Para buscar o histórico
-
-// Pegue a URL do seu C# (ex: http://192.168.1.15:5251)
-const SIGNALR_URL = "http://SEU_IP_AQUI:5251/chathub";
+import { api } from '@/src/services/api';
 
 interface ChatMessage {
   id: string;
@@ -50,7 +48,7 @@ export default function ChatRoom() {
       const token = await SecureStore.getItemAsync("reuse_jwt_token");
 
       const newConnection = new HubConnectionBuilder()
-        .withUrl(SIGNALR_URL, { accessTokenFactory: () => token || "" })
+        .withUrl(env.SIGNALR_URL, { accessTokenFactory: () => token || "" })
         .withAutomaticReconnect() // Truque sênior para não cair a conexão se o 4G oscilar
         .configureLogging(LogLevel.Warning)
         .build();

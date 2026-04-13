@@ -2,11 +2,10 @@ import axios from "axios";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 
-// const BASE_URL = "https://reuse-9fal.onrender.com/api";
-const BASE_URL = "http://192.168.0.108:5251/api";
+import { env } from "@/src/config/env";
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: env.API_URL,
   timeout: 50000,
 });
 
