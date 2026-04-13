@@ -1,9 +1,10 @@
 import { Text } from '@/components/ui/text';
+import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { api } from '@/src/services/api';
 import { getPublicUrl } from '@/src/services/supabaseStorage';
 import { useGetListings, type Listing } from '@/src/services/useListings';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, MessageCircle, Package } from 'lucide-react-native';
+import { ChevronLeft, MessageCircle, Package, Pencil } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   Dimensions,
@@ -84,9 +85,9 @@ function ImageCarousel({ images }: { images: string[] }) {
 
 // ── Owner Card ────────────────────────────────────────────────────────────────
 
-function OwnerCard({ owner }: { owner: Listing['owner'] }) {
+function OwnerCard({ owner, isOwner }: { owner: Listing['owner']; isOwner: boolean }) {
   const name = owner?.name ?? 'Usuário ReUse';
-  const avatar = owner?.profilePictureUrl;
+  const avatar = owner?.avatarUrl;
 
   return (
     <Animated.View
@@ -105,7 +106,9 @@ function OwnerCard({ owner }: { owner: Listing['owner'] }) {
       </View>
       <View className="flex-1">
         <Text className="text-[#3D2214] font-bold text-sm">{name}</Text>
-        <Text className="text-[#8C6D62] text-xs mt-0.5">Doador verificado ✓</Text>
+        <Text className="text-[#8C6D62] text-xs mt-0.5">
+          {isOwner ? 'Seu anúncio' : 'Doador verificado ✓'}
+        </Text>
       </View>
     </Animated.View>
   );
@@ -117,10 +120,11 @@ export default function ListingDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { data: currentUser } = useUserProfile();
 
-  // Fetch from cache (already loaded on home screen) or re-fetch
   const { data: listings } = useGetListings();
   const listing = listings?.find((l) => l.id.toString() === id);
+  const isOwner = !!(currentUser?.id && listing?.owner?.id && currentUser.id === listing.owner.id);
 
   if (!listing) {
     return (
@@ -223,7 +227,7 @@ export default function ListingDetail() {
           </View>
 
           {/* Owner */}
-          <OwnerCard owner={listing.owner} />
+          <OwnerCard owner={listing.owner} isOwner={isOwner} />
 
           {/* Description */}
           <View className="bg-white rounded-2xl p-4 border border-zinc-100">
@@ -260,21 +264,28 @@ export default function ListingDetail() {
           elevation: 10,
         }}
       >
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleStartChat}
-          className="w-full h-14 rounded-2xl flex-row items-center justify-center gap-3 bg-[#FF692E]"
-          style={{
-            shadowColor: '#FF692E',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.3,
-            shadowRadius: 16,
-            elevation: 8,
-          }}
-        >
-          <MessageCircle color="#fff" size={20} />
-          <Text className="text-white font-bold text-base">Entrar em contato</Text>
-        </TouchableOpacity>
+        {isOwner ? (
+          <View className="w-full h-14 rounded-2xl flex-row items-center justify-center bg-zinc-200">
+            <Pencil color="#8C6D62" size={18} style={{ marginRight: 8 }} />
+            <Text className="text-[#8C6D62] font-bold text-base">Este anúncio é seu</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleStartChat}
+            className="w-full h-14 rounded-2xl flex-row items-center justify-center bg-[#FF692E]"
+            style={{
+              shadowColor: '#FF692E',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.3,
+              shadowRadius: 16,
+              elevation: 8,
+            }}
+          >
+            <MessageCircle color="#fff" size={20} style={{ marginRight: 8 }} />
+            <Text className="text-white font-bold text-base">Entrar em contato</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

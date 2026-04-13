@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter as useExpoRouter } from 'expo-router';
-import { Camera, ChevronLeft, X } from 'lucide-react-native';
+import { Camera, ChevronLeft, ImageIcon, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -150,20 +151,49 @@ export default function CreateListing() {
     });
   };
 
-  // ── Adiciona imagem da galeria ──
-  const pickImage = async () => {
-    if (selectedImages.length >= 5) return;
+  const addImageFromResult = (result: ImagePicker.ImagePickerResult) => {
+    if (!result.canceled) {
+      setValue('images', [...selectedImages, result.assets[0].uri], {
+        shouldValidate: true,
+      });
+    }
+  };
+
+  const pickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 5],
       quality: 0.4,
     });
-    if (!result.canceled) {
-      setValue('images', [...selectedImages, result.assets[0].uri], {
-        shouldValidate: true,
-      });
+    addImageFromResult(result);
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à câmera para tirar fotos.');
+      return;
     }
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 5],
+        quality: 0.4,
+      });
+      addImageFromResult(result);
+    } catch {
+      Alert.alert('Câmera indisponível', 'A câmera não está disponível neste dispositivo.');
+    }
+  };
+
+  const handleAddImage = () => {
+    if (selectedImages.length >= 5) return;
+    Alert.alert('Adicionar foto', 'Escolha uma opção', [
+      { text: 'Tirar foto', onPress: takePhoto },
+      { text: 'Galeria', onPress: pickFromGallery },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   };
 
   // ── Remove imagem pelo índice ──
@@ -286,17 +316,14 @@ export default function CreateListing() {
                   {selectedImages.length < 5 && (
                     <TouchableOpacity
                       activeOpacity={0.7}
-                      onPress={pickImage}
+                      onPress={handleAddImage}
                       accessibilityLabel="Adicionar foto"
                       accessibilityRole="button"
-                      accessibilityHint="Abre a galeria para selecionar uma imagem"
-                      className="bg-white border-2 border-dashed border-[#FF692E]/40 rounded-2xl items-center justify-center "
-                      style={{ width: '50%', aspectRatio: 4 / 5 }}
+                      className="bg-white border-2 border-dashed border-[#FF692E]/40 rounded-2xl"
+                      style={{ width: '30%', aspectRatio: 4 / 5, alignItems: 'center', justifyContent: 'center' }}
                     >
-                        <Camera color="#FF692E" size={22} />
-                      <Text className="text-[#FF692E] font-bold text-xs">
-                        Adicionar
-                      </Text>
+                      <Camera color="#FF692E" size={22} style={{ marginBottom: 4 }} />
+                      <Text className="text-[#FF692E] font-bold text-xs">Adicionar</Text>
                     </TouchableOpacity>
                   )}
 

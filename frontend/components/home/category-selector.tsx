@@ -7,11 +7,11 @@ export function CategorySelector() {
   const [selected, setSelected] = useState('Todos');
 
   return (
-    <View className="mb-6 -mx-6">
+    <View className="mb-6">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 24, gap: 12 }}>
+        contentContainerStyle={{ paddingLeft: 24, paddingRight: 40, gap: 12 }}>
         {CATEGORIES.map((category) => {
           const isSelected = selected === category;
 
