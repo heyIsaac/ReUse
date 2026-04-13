@@ -18,6 +18,8 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useGetListings } from '@/src/services/useListings';
+import { api } from '@/src/services/api';
+import { useQuery } from '@tanstack/react-query';
 
 export default function ProfileScreen() {
   const router = useExpoRouter();
@@ -25,8 +27,19 @@ export default function ProfileScreen() {
   const { data: user, isLoading } = useUserProfile();
   const { data: listings } = useGetListings();
 
+  const { data: ratingData } = useQuery({
+    queryKey: ['myRating', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await api.get(`/ratings/user/${user.id}`);
+      return data as { average: number; count: number };
+    },
+    enabled: !!user?.id,
+  });
+
   const myListingsCount = listings?.filter(l => l.owner?.id === user?.id).length ?? 0;
   const impactKg = (myListingsCount * 2.5).toFixed(1).replace('.0', '');
+  const ratingDisplay = ratingData && ratingData.count > 0 ? ratingData.average.toString() : '-';
 
   const handleLogout = async () => {
     try {
@@ -73,7 +86,7 @@ export default function ProfileScreen() {
           <View className="w-[1px] h-full bg-zinc-100" />
           <StatItem icon={Leaf} label="Impacto" value={`${impactKg}kg`} color="#84DCD9" />
           <View className="w-[1px] h-full bg-zinc-100" />
-          <StatItem icon={Star} label="Avaliação" value="-" color="#F8A720" />
+          <StatItem icon={Star} label="Avaliação" value={ratingDisplay} color="#F8A720" />
         </View>
 
         {/* MENU DE OPÇÕES */}

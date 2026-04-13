@@ -214,6 +214,16 @@ public class ChatController : ControllerBase
             InterestedId = userId.Value
         };
         _context.ChatRooms.Add(newRoom);
+
+        var listing = await _context.Listings.FindAsync(req.ListingId);
+        _context.Notifications.Add(new Notification
+        {
+            UserId = req.OwnerId,
+            Type = "new_interest",
+            Title = "Novo interessado!",
+            Body = $"Alguém se interessou pelo seu anúncio \"{listing?.Title ?? "item"}\".",
+        });
+
         await _context.SaveChangesAsync();
 
         return Ok(new { roomId = newRoom.Id });
@@ -243,6 +253,31 @@ public class ChatController : ControllerBase
 
         var listing = await _context.Listings.FindAsync(room.ListingId);
         if (listing != null) listing.Condition = "Entregue";
+
+        var otherId = room.OwnerId == userId ? room.InterestedId : room.OwnerId;
+        _context.Notifications.Add(new Notification
+        {
+            UserId = otherId,
+            Type = "completed",
+            Title = "Doação concluída!",
+            Body = $"O item \"{listing?.Title ?? ""}\" foi marcado como entregue. Avalie a experiência!",
+        });
+
+        var favUsers = await _context.Favorites
+            .Where(f => f.ListingId == room.ListingId && f.UserId != userId && f.UserId != otherId)
+            .Select(f => f.UserId)
+            .ToListAsync();
+
+        foreach (var favUserId in favUsers)
+        {
+            _context.Notifications.Add(new Notification
+            {
+                UserId = favUserId,
+                Type = "favorite_donated",
+                Title = "Item doado",
+                Body = $"O item \"{listing?.Title ?? ""}\" que você salvou já foi doado.",
+            });
+        }
 
         await _context.SaveChangesAsync();
 
