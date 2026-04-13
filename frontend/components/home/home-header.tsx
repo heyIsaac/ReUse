@@ -3,7 +3,7 @@ import { api } from '@/src/services/api';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Bell } from 'lucide-react-native';
+import { Bell, ScanLine } from 'lucide-react-native';
 import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
@@ -29,7 +29,14 @@ export function HomeHeader() {
         </Text>
       </View>
 
-      <View className="flex-row items-center gap-3">
+      <View className="flex-row items-center gap-2">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push('/qr-scanner?chatRoomId=')}
+          className="bg-white p-2 rounded-full shadow-sm"
+        >
+          <ScanLine color="#642714" size={22} strokeWidth={2.5} />
+        </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => router.push('/notifications')}
