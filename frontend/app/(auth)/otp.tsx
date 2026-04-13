@@ -68,13 +68,10 @@ export default function OtpScreen() {
 
       const user = result.data.user;
       if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", user.id)
-          .single();
+        const meta = user.user_metadata ?? {};
+        const hasName = !!(meta.full_name || meta.name);
 
-        if (profile?.name) {
+        if (hasName) {
           router.replace("/(tabs)");
         } else {
           router.replace("/(auth)/register");

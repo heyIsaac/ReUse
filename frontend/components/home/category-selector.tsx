@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useGetCategories } from '@/src/services/useCategories';
+import * as SecureStore from 'expo-secure-store';
 import React, { useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
@@ -13,14 +13,14 @@ export function CategorySelector({ selected, onSelect }: CategorySelectorProps) 
   const items = ['Todos', ...(categories?.map(c => c.name) ?? [])];
 
   useEffect(() => {
-    AsyncStorage.getItem('selectedCategory').then((saved) => {
+    SecureStore.getItemAsync('selectedCategory').then((saved) => {
       if (saved && items.includes(saved)) onSelect(saved);
     });
   }, [categories]);
 
   const handleSelect = (category: string) => {
     onSelect(category);
-    AsyncStorage.setItem('selectedCategory', category);
+    SecureStore.setItemAsync('selectedCategory', category);
   };
 
   return (
