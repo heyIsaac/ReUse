@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReUse.Api.Data;
-using ReUse.Api.DTOs;
 
 namespace ReUse.Api.Controllers;
 
