@@ -20,6 +20,9 @@ public class ChatRoom
     [Column("status")]
     public string Status { get; set; } = "active";
 
+    [Column("qr_token")]
+    public string? QrToken { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

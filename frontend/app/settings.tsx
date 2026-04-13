@@ -84,7 +84,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async (text) => {
             if (text !== 'DELETAR') {
-              alert('Texto incorreto. Conta não deletada.');
+              Alert.alert('', 'Texto incorreto. Conta não deletada.');
               return;
             }
             try {

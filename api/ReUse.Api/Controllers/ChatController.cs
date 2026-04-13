@@ -239,6 +239,70 @@ public class ChatController : ControllerBase
         return Ok(messages);
     }
 
+    [HttpPost("{roomId}/generate-qr")]
+    public async Task<IActionResult> GenerateQr(Guid roomId)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var room = await _context.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId);
+        if (room == null) return NotFound();
+        if (room.OwnerId != userId) return BadRequest(new { Message = "Apenas o dono pode gerar o QR." });
+        if (room.Status == "completed") return BadRequest(new { Message = "Negociação já concluída." });
+
+        room.QrToken = Guid.NewGuid().ToString("N");
+        await _context.SaveChangesAsync();
+
+        return Ok(new { qrToken = room.QrToken, qrData = $"reuse://confirm/{roomId}/{room.QrToken}" });
+    }
+
+    [HttpPost("{roomId}/confirm-delivery")]
+    public async Task<IActionResult> ConfirmDelivery(Guid roomId, [FromBody] ConfirmDeliveryRequest req)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var room = await _context.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId);
+        if (room == null) return NotFound();
+        if (room.InterestedId != userId) return BadRequest(new { Message = "Apenas o interessado pode confirmar." });
+        if (room.Status == "completed") return BadRequest(new { Message = "Já concluída." });
+        if (room.QrToken == null || room.QrToken != req.Token) return BadRequest(new { Message = "QR Code inválido." });
+
+        room.Status = "completed";
+
+        var listing = await _context.Listings.FindAsync(room.ListingId);
+        if (listing != null) listing.Condition = "Entregue";
+
+        var otherId = room.OwnerId;
+        _context.Notifications.Add(new Notification
+        {
+            UserId = otherId,
+            Type = "completed",
+            Title = "Doação concluída!",
+            Body = $"O item \"{listing?.Title ?? ""}\" foi confirmado como entregue!",
+        });
+
+        var favUsers = await _context.Favorites
+            .Where(f => f.ListingId == room.ListingId && f.UserId != userId && f.UserId != otherId)
+            .Select(f => f.UserId)
+            .ToListAsync();
+
+        foreach (var favUserId in favUsers)
+        {
+            _context.Notifications.Add(new Notification
+            {
+                UserId = favUserId,
+                Type = "favorite_donated",
+                Title = "Item doado",
+                Body = $"O item \"{listing?.Title ?? ""}\" que você salvou já foi doado.",
+            });
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Entrega confirmada!" });
+    }
+
     [HttpPut("{roomId}/complete")]
     public async Task<IActionResult> CompleteChat(Guid roomId)
     {
@@ -289,4 +353,9 @@ public class StartChatRequest
 {
     public int ListingId { get; set; }
     public Guid OwnerId { get; set; }
+}
+
+public class ConfirmDeliveryRequest
+{
+    public string Token { get; set; } = string.Empty;
 }

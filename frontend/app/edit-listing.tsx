@@ -53,11 +53,11 @@ export default function EditListingScreen() {
         images: listing?.images ?? [],
       });
       await queryClient.invalidateQueries({ queryKey: ['listings'] });
-      alert('Anúncio atualizado!');
+      Alert.alert('', 'Anúncio atualizado!');
       router.back();
     } catch (err) {
       console.error('Erro ao atualizar:', err);
-      alert('Erro ao atualizar o anúncio.');
+      Alert.alert('', 'Erro ao atualizar o anúncio.');
     } finally {
       setIsSaving(false);
     }
@@ -77,7 +77,7 @@ export default function EditListingScreen() {
             router.replace('/(tabs)');
           } catch (err) {
             console.error('Erro ao excluir:', err);
-            alert('Erro ao excluir o anúncio.');
+            Alert.alert('', 'Erro ao excluir o anúncio.');
           } finally {
             setIsDeleting(false);
           }
