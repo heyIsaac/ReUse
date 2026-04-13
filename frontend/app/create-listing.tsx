@@ -323,7 +323,7 @@ export default function CreateListing() {
                       accessibilityLabel="Adicionar foto"
                       accessibilityRole="button"
                       className="bg-white border-2 border-dashed border-[#FF692E]/40 rounded-2xl"
-                      style={{ width: '30%', aspectRatio: 4 / 5, alignItems: 'center', justifyContent: 'center' }}
+                      style={{ width: '30%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' }}
                     >
                       <Camera color="#FF692E" size={22} style={{ marginBottom: 4 }} />
                       <Text className="text-[#FF692E] font-bold text-xs">Adicionar</Text>

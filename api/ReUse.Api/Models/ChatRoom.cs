@@ -17,6 +17,9 @@ public class ChatRoom
     [Column("interested_id")]
     public Guid InterestedId { get; set; }
 
+    [Column("status")]
+    public string Status { get; set; } = "active";
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
