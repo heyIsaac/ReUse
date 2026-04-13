@@ -1,8 +1,6 @@
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { useRouter as useExpoRouter } from 'expo-router';
 import { supabase } from '@/src/services/supabase';
 import {
-  Camera,
   ChevronRight,
   CircleHelp,
   Heart,
@@ -12,68 +10,23 @@ import {
   Settings,
   Star
 } from 'lucide-react-native';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React from 'react';
 import { ActivityIndicator, Image, ScrollView, TouchableOpacity, View } from 'react-native';
 
 import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { useUpdateAvatar, useUserProfile } from '@/src/hooks/useUserProfile';
+import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useGetListings } from '@/src/services/useListings';
 
 export default function ProfileScreen() {
   const router = useExpoRouter();
 
   const { data: user, isLoading } = useUserProfile();
-  const updateAvatar = useUpdateAvatar();
   const { data: listings } = useGetListings();
 
   const myListingsCount = listings?.filter(l => l.owner?.id === user?.id).length ?? 0;
   const impactKg = (myListingsCount * 2.5).toFixed(1).replace('.0', '');
-
-  const [emojiOptions, setEmojiOptions] = useState<string[]>([]);
-
-  // Refs e Variáveis do Bottom Sheet
-  const bottomSheetRef = useRef<BottomSheet>(null);
-
-  // Snap Points: 0% (Fechado/Invisível) -> 45% (Pequeno) -> 90% (Tela Cheia)
-  const snapPoints = useMemo(() => ['45%', '90%'], []);
-
-  // Cria o fundo preto transparente que fecha o modal ao clicar fora
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.6}
-        pressBehavior="close"
-      />
-    ),
-    []
-  );
-
-  const generateEmojis = () => {
-    const newOptions = Array.from({ length: 24 }).map(() =>
-      `https://api.dicebear.com/9.x/fun-emoji/png?seed=${Math.random().toString(36).substring(7)}`
-    );
-    setEmojiOptions(newOptions);
-  };
-
-  const openAvatarModal = () => {
-    generateEmojis();
-    bottomSheetRef.current?.snapToIndex(0);
-  };
-
-  const handleSelectAvatar = (url: string) => {
-    updateAvatar.mutate(url);
-    bottomSheetRef.current?.close();
-  };
-
-  const handleSurpriseMe = () => {
-    const randomUrl = `https://api.dicebear.com/9.x/fun-emoji/png?seed=${Math.random().toString(36).substring(7)}`;
-    handleSelectAvatar(randomUrl);
-  };
 
   const handleLogout = async () => {
     try {
@@ -90,26 +43,12 @@ export default function ProfileScreen() {
 
         {/* HEADER DO PERFIL */}
         <View className="items-center pt-8 pb-6">
-          <View className="relative">
-            {updateAvatar.isPending ? (
-              <View className="w-28 h-28 rounded-full bg-zinc-200 items-center justify-center">
-                <ActivityIndicator size="large" color="#FF692E" />
-              </View>
-            ) : (
-              <Image
-                source={{ uri: user?.avatarUrl || `https://api.dicebear.com/9.x/fun-emoji/png?seed=${user?.id}` }}
-                className="w-28 h-28 rounded-full bg-zinc-200"
-              />
-            )}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={openAvatarModal}
-              disabled={updateAvatar.isPending}
-              className="absolute bottom-0 right-0 bg-[#FF692E] p-2.5 rounded-full border-4 border-[#FDF9F1]"
-            >
-              <Camera size={16} color="#FFFFFF" strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => router.push('/edit-profile')}>
+            <Image
+              source={{ uri: user?.avatarUrl || `https://api.dicebear.com/9.x/fun-emoji/png?seed=${user?.id}` }}
+              className="w-28 h-28 rounded-full bg-zinc-200"
+            />
+          </TouchableOpacity>
 
           {isLoading ? (
             <View className="items-center mt-5">
@@ -166,47 +105,6 @@ export default function ProfileScreen() {
           </Button>
         </View>
       </ScrollView>
-
-      {/* BOTTOM SHEET GORHOM */}
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        snapPoints={snapPoints}
-        enablePanDownToClose={true}
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: '#FDF9F1', borderRadius: 32 }}
-        handleIndicatorStyle={{ backgroundColor: '#D4D4D8', width: 50, height: 6 }}
-      >
-        <View className="px-6 pb-4 flex-row justify-between items-center">
-          <Text variant="h3" className="text-[#642714]">Escolha seu Avatar</Text>
-        </View>
-
-        <BottomSheetScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}>
-          <View className="flex-row flex-wrap justify-between gap-y-4 mt-2">
-            {emojiOptions.map((url, index) => (
-              <TouchableOpacity
-                key={index}
-                activeOpacity={0.7}
-                onPress={() => handleSelectAvatar(url)}
-                className="w-[30%] aspect-square bg-transparent rounded-2xl items-center justify-center border-2 border-transparent focus:border-[#FF692E]"
-              >
-                <Image source={{ uri: url }} className="w-20 h-20 rounded-full" />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </BottomSheetScrollView>
-
-        <View className="px-6 py-5 bg-white border-t border-zinc-100">
-          <Button
-            variant="outline"
-            className="w-full py-4 flex-row justify-center items-center border-[#FF692E] bg-orange-50"
-            onPress={handleSurpriseMe}
-          >
-            <Text className="text-[#FF692E] font-bold text-base ml-2">🎲 Escolher Aleatoriamente</Text>
-          </Button>
-        </View>
-      </BottomSheet>
-
     </ScreenLayout>
   );
 }
