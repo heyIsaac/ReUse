@@ -1,22 +1,25 @@
-import { api } from '@/src/services/api';
+import { supabase } from '@/src/services/supabase';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export function useUserProfile() {
   return useQuery({
     queryKey: ['userProfile'],
     queryFn: async () => {
-      const response = await api.get('/users/me');
-      const data = response.data;
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error || !user) throw new Error('Usuário não autenticado');
+
+      const meta = user.user_metadata ?? {};
 
       return {
-        id: data.id,
-        name: data.name || 'Guest',
-        email: data.email || 'email@desconhecido.com',
-        avatarUrl: data.profilePictureUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&q=80',
+        id: user.id,
+        name: meta.full_name || meta.name || 'Guest',
+        email: user.email || 'email@desconhecido.com',
+        avatarUrl: meta.avatar_url || meta.picture
+          || `https://api.dicebear.com/9.x/fun-emoji/png?seed=${user.id}`,
       };
     },
-    // Mantém os dados no cache ("frescos") por bastante tempo para evitar requisições repetidas na API
-    staleTime: 1000 * 60 * 60 * 24, // 24 horas
+    staleTime: 1000 * 60 * 60 * 24,
   });
 }
 
@@ -25,11 +28,12 @@ export function useUpdateAvatar() {
 
   return useMutation({
     mutationFn: async (avatarUrl: string) => {
-      const response = await api.put('/users/me/avatar', { avatarUrl });
-      return response.data;
+      const { error } = await supabase.auth.updateUser({
+        data: { avatar_url: avatarUrl },
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
-      // Invalida a query do perfil do usuário para que a tela recarregue a imagem instantaneamente
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
     },
   });

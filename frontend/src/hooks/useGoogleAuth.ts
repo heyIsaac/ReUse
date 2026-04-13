@@ -10,10 +10,13 @@ import {
 import { useRouter } from "expo-router";
 import { useState } from "react";
 
-GoogleSignin.configure({
-  webClientId: env.GOOGLE_WEB_CLIENT_ID,
-  scopes: ["profile", "email"],
-});
+if (env.GOOGLE_WEB_CLIENT_ID) {
+  GoogleSignin.configure({
+    webClientId: env.GOOGLE_WEB_CLIENT_ID,
+    iosClientId: env.GOOGLE_WEB_CLIENT_ID,
+    scopes: ["profile", "email"],
+  });
+}
 
 export function useGoogleAuth() {
   const router = useRouter();
@@ -21,6 +24,11 @@ export function useGoogleAuth() {
   const [error, setError] = useState<string | null>(null);
 
   const signInWithGoogle = async () => {
+    if (!env.GOOGLE_WEB_CLIENT_ID) {
+      setError("Google Sign-In não configurado.");
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 

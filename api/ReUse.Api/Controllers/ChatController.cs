@@ -24,7 +24,8 @@ public class ChatController : ControllerBase
     [HttpPost("start")]
     public async Task<IActionResult> StartChat([FromBody] StartChatRequest req)
     {
-        var myId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (!Guid.TryParse(sub, out var myId)) return Unauthorized();
 
         // Verifica se a sala já existe
         var existingRoom = await _context.ChatRooms
