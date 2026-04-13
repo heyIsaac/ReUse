@@ -1,6 +1,5 @@
-import { api } from "@/src/services/api";
+import { supabase } from "@/src/services/supabase";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 import { AccessToken, LoginManager } from "react-native-fbsdk-next";
 
@@ -14,16 +13,16 @@ export function useFacebookAuth() {
     setIsLoading(true);
 
     try {
-      // 1. Abre o modal nativo do Facebook pedindo permissão de perfil e email
-      const result = await LoginManager.logInWithPermissions(["public_profile", "email"]);
+      const result = await LoginManager.logInWithPermissions([
+        "public_profile",
+        "email",
+      ]);
 
       if (result.isCancelled) {
-        console.log("[Facebook Auth] Login cancelado pelo usuário.");
         setIsLoading(false);
         return;
       }
 
-      // 2. Pega o Token de Acesso gerado pelo Facebook
       const data = await AccessToken.getCurrentAccessToken();
 
       if (!data || !data.accessToken) {
@@ -32,20 +31,18 @@ export function useFacebookAuth() {
         return;
       }
 
-      console.log("[Facebook Auth] ✅ Token obtido com sucesso!");
-
-      // 3. Envia o token para o seu backend C# validar e retornar o JWT do Paguru
-      const res = await api.post<{ token: string }>("/auth/facebook-signin", {
-        accessToken: data.accessToken.toString(),
+      const { error: supaError } = await supabase.auth.signInWithIdToken({
+        provider: "facebook",
+        token: data.accessToken.toString(),
       });
 
-      // 4. Salva o JWT no SecureStore
-      await SecureStore.setItemAsync("reuse_jwt_token", res.data.token);
-      console.log("[Facebook Auth] ✅ Login bem-sucedido! JWT salvo.");
-
+      if (supaError) {
+        console.error("[Facebook Auth] Erro Supabase:", supaError.message);
+        setError("Falha ao autenticar com o Facebook.");
+        return;
+      }
 
       router.replace("/(tabs)" as any);
-
     } catch (err: any) {
       console.error("[Facebook Auth] Erro:", err);
       setError("Falha ao autenticar com o Facebook.");
@@ -57,6 +54,6 @@ export function useFacebookAuth() {
   return {
     signInWithFacebook,
     isLoading,
-    error
+    error,
   };
 }

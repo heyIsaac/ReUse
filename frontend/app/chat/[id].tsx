@@ -1,7 +1,6 @@
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { useQuery } from '@tanstack/react-query'; // ADICIONADO
+import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { ChevronLeft, Send } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, TextInput, TouchableOpacity, View } from 'react-native';
@@ -11,6 +10,7 @@ import { Text } from '@/components/ui/text';
 import { env } from '@/src/config/env';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { api } from '@/src/services/api';
+import { supabase } from '@/src/services/supabase';
 
 interface ChatMessage {
   id: string;
@@ -45,7 +45,8 @@ export default function ChatRoom() {
   // 3. CONECTAR NO SIGNALR PARA OUVIR NOVAS MENSAGENS
   useEffect(() => {
     const setupSignalR = async () => {
-      const token = await SecureStore.getItemAsync("reuse_jwt_token");
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
 
       const newConnection = new HubConnectionBuilder()
         .withUrl(env.SIGNALR_URL, { accessTokenFactory: () => token || "" })

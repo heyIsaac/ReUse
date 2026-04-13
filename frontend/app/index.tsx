@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import { supabase } from "@/src/services/supabase";
 import { StatusBar } from "expo-status-bar";
 import { ChevronRight, Gift, Leaf, Users } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
@@ -41,13 +42,9 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     async function checkInitialState() {
-      const token = await SecureStore.getItemAsync("reuse_jwt_token");
-      if (token) {
-        // Usuário já logado
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
         router.replace("/(tabs)");
-
-        // Debug
-        // router.replace("/(auth)/login");
         return;
       }
 

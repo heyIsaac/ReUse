@@ -22,7 +22,7 @@ const API_URL = required("EXPO_PUBLIC_API_URL");
 /**
  * Deriva a URL base do SignalR a partir da API_URL.
  * Ex.: "http://192.168.0.10:5251/api" → "http://192.168.0.10:5251/chathub"
- *      "https://reuse.onrender.com/api" → "https://reuse.onrender.com/chathub"
+ *      "https://reuse-api.onrender.com/api" → "https://reuse-api.onrender.com/chathub"
  */
 function deriveSignalRUrl(apiUrl: string): string {
   try {
@@ -38,13 +38,8 @@ export const env = {
   API_URL,
   SIGNALR_URL: deriveSignalRUrl(API_URL),
 
-  EMAILJS_SERVICE_ID: required("EXPO_PUBLIC_EMAILJS_SERVICE_ID"),
-  EMAILJS_TEMPLATE_ID: required("EXPO_PUBLIC_EMAILJS_TEMPLATE_ID"),
-  EMAILJS_PUBLIC_KEY: required("EXPO_PUBLIC_EMAILJS_PUBLIC_KEY"),
+  SUPABASE_URL: required("EXPO_PUBLIC_SUPABASE_URL"),
+  SUPABASE_ANON_KEY: required("EXPO_PUBLIC_SUPABASE_ANON_KEY"),
 
   GOOGLE_WEB_CLIENT_ID: required("EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID"),
-  GOOGLE_ANDROID_CLIENT_ID: required("EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID"),
-
-  FACEBOOK_APP_ID: required("EXPO_PUBLIC_FACEBOOK_APP_ID"),
-  FACEBOOK_CLIENT_TOKEN: required("EXPO_PUBLIC_FACEBOOK_CLIENT_TOKEN"),
 } as const;

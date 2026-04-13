@@ -1,6 +1,6 @@
 import { Text } from '@/components/ui/text';
 import { api } from '@/src/services/api';
-import { cloudinaryThumb } from '@/src/services/cloudinaryUpload';
+import { getPublicUrl } from '@/src/services/supabaseStorage';
 import { useGetListings, type Listing } from '@/src/services/useListings';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, MessageCircle, Package } from 'lucide-react-native';
@@ -55,7 +55,7 @@ function ImageCarousel({ images }: { images: string[] }) {
         scrollEventThrottle={16}
         renderItem={({ item }) => (
           <Image
-            source={{ uri: cloudinaryThumb(item, 800, 800) }}
+            source={{ uri: getPublicUrl(item, 800, 800) }}
             style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH }}
             resizeMode="cover"
           />
