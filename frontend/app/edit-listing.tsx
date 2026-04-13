@@ -2,6 +2,7 @@ import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { ScreenLayout } from '@/components/layout/screen-layout';
 import { api } from '@/src/services/api';
+import { useGetCategories } from '@/src/services/useCategories';
 import { useGetListings } from '@/src/services/useListings';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Trash2 } from 'lucide-react-native';
@@ -17,12 +18,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 
-const CATEGORIES = ['Roupas', 'Calçados', 'Eletrônicos', 'Móveis', 'Livros'];
+const FALLBACK_CATEGORIES = ['Roupas', 'Calçados', 'Eletrônicos', 'Móveis', 'Livros'];
 const CONDITIONS = ['Novo', 'Seminovo', 'Com marcas de uso'];
 
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { data: dbCategories } = useGetCategories();
+  const CATEGORIES = dbCategories?.map(c => c.name) ?? FALLBACK_CATEGORIES;
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
 

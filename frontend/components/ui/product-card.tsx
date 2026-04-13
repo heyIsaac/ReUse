@@ -1,18 +1,21 @@
+import { useUserProfile } from "@/src/hooks/useUserProfile";
 import { getPublicUrl } from "@/src/services/supabaseStorage";
 import { Listing } from "@/src/services/useListings";
 import { useRouter } from "expo-router";
-import { Heart, MapPin } from "lucide-react-native";
+import { Heart, MapPin, User } from "lucide-react-native";
 import { Image, TouchableOpacity, View } from "react-native";
 
 import { Text } from '@/components/ui/text';
 
 export function ProductCard({ item }: { item: Listing }) {
   const router = useRouter();
+  const { data: currentUser } = useUserProfile();
+  const isOwner = currentUser?.id === item.owner?.id;
+
   const thumbnailUrl = item.images?.[0]
     ? getPublicUrl(item.images[0], 400, 500)
     : null;
 
-  // Condition badge color
   const conditionColor =
     item.condition === 'Novo'
       ? '#84DCD9'
@@ -35,9 +38,16 @@ export function ProductCard({ item }: { item: Listing }) {
           </View>
         )}
 
-        <TouchableOpacity className="absolute top-2 right-2 bg-white/90 p-2 rounded-full">
-          <Heart color="#FF692E" size={18} strokeWidth={2.5} />
-        </TouchableOpacity>
+        {isOwner ? (
+          <View className="absolute top-2 right-2 bg-[#642714]/80 px-2.5 py-1.5 rounded-full flex-row items-center">
+            <User color="#fff" size={12} style={{ marginRight: 4 }} />
+            <Text className="text-white text-[10px] font-bold">Seu</Text>
+          </View>
+        ) : (
+          <TouchableOpacity className="absolute top-2 right-2 bg-white/90 p-2 rounded-full">
+            <Heart color="#FF692E" size={18} strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
 
         <View className="absolute bottom-2 left-2 px-2 py-1 rounded-md" style={{ backgroundColor: conditionColor + '22', borderWidth: 1, borderColor: conditionColor }}>
           <Text className="text-[10px] font-black" style={{ color: conditionColor }}>
@@ -54,7 +64,7 @@ export function ProductCard({ item }: { item: Listing }) {
           <View className="flex-row items-center gap-1">
             <MapPin color="#8C6D62" size={12} />
             <Text className="text-[#8C6D62] text-xs font-medium">
-              {item.owner?.name ?? 'Anônimo'}
+              {isOwner ? 'Você' : (item.owner?.name ?? 'Anônimo')}
             </Text>
           </View>
           <Text className="text-[#8C6D62] text-[10px]" numberOfLines={1}>

@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<Listing> Listings { get; set; }
     public DbSet<ChatRoom> ChatRooms { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
+    public DbSet<Category> Categories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,5 +21,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Listing>().ToTable("listings");
         modelBuilder.Entity<ChatRoom>().ToTable("chat_rooms");
         modelBuilder.Entity<ChatMessage>().ToTable("chat_messages");
+        modelBuilder.Entity<Category>().ToTable("categories");
     }
 }

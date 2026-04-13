@@ -1,10 +1,12 @@
+import { useGetCategories } from '@/src/services/useCategories';
 import React, { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-const CATEGORIES = ['Todos', 'Roupas', 'Calçados', 'Acessórios'];
-
 export function CategorySelector() {
   const [selected, setSelected] = useState('Todos');
+  const { data: categories } = useGetCategories();
+
+  const items = ['Todos', ...(categories?.map(c => c.name) ?? [])];
 
   return (
     <View className="mb-6">
@@ -12,7 +14,7 @@ export function CategorySelector() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ paddingLeft: 24, paddingRight: 40, gap: 12 }}>
-        {CATEGORIES.map((category) => {
+        {items.map((category) => {
           const isSelected = selected === category;
 
           return (
