@@ -66,8 +66,8 @@ export function ProductCard({ item }: { item: Listing }) {
           </TouchableOpacity>
         )}
 
-        <View className="absolute bottom-2 left-2 px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.85)' }}>
-          <Text className="text-[10px] font-black" style={{ color: conditionColor }}>
+        <View className="absolute bottom-2 left-2 px-2.5 py-1.5 rounded-lg" style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}>
+          <Text className="text-[10px] font-black" style={{ color: '#3D2214' }}>
             {item.condition}
           </Text>
         </View>

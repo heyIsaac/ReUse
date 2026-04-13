@@ -124,10 +124,11 @@ export default function ChatRoom() {
   const handleGenerateQr = async () => {
     setIsGeneratingQr(true);
     try {
-      const { data } = await api.post(`/chat/${chatRoomId}/generate-qr`);
-      setQrData(data.qrData);
+      const res = await api.post(`/chat/${chatRoomId}/generate-qr`);
+      setQrData(res.data.qrData);
     } catch (err: any) {
-      Alert.alert('', err.response?.data?.message || 'Erro ao gerar QR.');
+      console.error('QR error:', err.response?.status, err.response?.data);
+      Alert.alert('', err.response?.data?.message || `Erro ao gerar QR (${err.response?.status || 'rede'})`);
     } finally {
       setIsGeneratingQr(false);
     }
@@ -220,9 +221,9 @@ export default function ChatRoom() {
           </View>
           <Text className="text-[#8C6D62] text-xs mt-2">O interessado escaneia para confirmar a entrega</Text>
         </View>
-      ) : !isCompleted ? (
+      ) : room ? (
         <View className="flex-row px-5 py-3 gap-2 border-b border-zinc-100 bg-white">
-          {isOwner && (
+          {(isOwner || (!isOwner && !isInterested)) && (
             <TouchableOpacity
               onPress={handleGenerateQr}
               disabled={isGeneratingQr}
@@ -238,7 +239,7 @@ export default function ChatRoom() {
               )}
             </TouchableOpacity>
           )}
-          {isInterested && (
+          {(isInterested || (!isOwner && !isInterested)) && (
             <TouchableOpacity
               onPress={() => router.push(`/qr-scanner?chatRoomId=${chatRoomId}`)}
               className="flex-1 flex-row items-center justify-center bg-[#FF692E] py-3 rounded-xl"
