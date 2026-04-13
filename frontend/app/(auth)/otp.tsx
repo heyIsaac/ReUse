@@ -41,20 +41,47 @@ export default function OtpScreen() {
     setHasError(false);
 
     try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: email!,
+      const normalizedEmail = email!.toLowerCase().trim();
+
+      // Tenta como "email" (login de usuário existente)
+      let result = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
         token: code,
         type: "email",
       });
 
-      if (error) {
-        console.error("Código inválido:", error.message);
+      // Se falhar, tenta como "signup" (primeiro acesso / cadastro)
+      if (result.error) {
+        result = await supabase.auth.verifyOtp({
+          email: normalizedEmail,
+          token: code,
+          type: "signup",
+        });
+      }
+
+      if (result.error) {
+        console.error("Código inválido:", result.error.message);
         setHasError(true);
         setCode("");
         return;
       }
 
-      router.replace("/(tabs)");
+      const user = result.data.user;
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.name) {
+          router.replace("/(tabs)");
+        } else {
+          router.replace("/(auth)/register");
+        }
+      } else {
+        router.replace("/(tabs)");
+      }
     } catch (error) {
       console.error("Código inválido", error);
       setHasError(true);

@@ -1,10 +1,24 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace ReUse.Api.Models;
 
+[Table("chat_rooms")]
 public class ChatRoom
 {
+    [Column("id")]
     public Guid Id { get; set; } = Guid.NewGuid();
-    public int ListingId { get; set; } // O Desapego que gerou a conversa
-    public Guid OwnerId { get; set; } // Dono do item
-    public Guid InterestedId { get; set; } // Quem quer o item
+
+    [Column("listing_id")]
+    public int ListingId { get; set; }
+
+    [Column("owner_id")]
+    public Guid OwnerId { get; set; }
+
+    [Column("interested_id")]
+    public Guid InterestedId { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public ICollection<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
 }
