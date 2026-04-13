@@ -1,3 +1,4 @@
+import { env } from "@/src/config/env";
 import { api } from "@/src/services/api";
 import {
   GoogleSignin,
@@ -10,11 +11,8 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useState } from "react";
 
-// Configura o Google Sign-In uma única vez quando o módulo é carregado.
-// webClientId é o ID do seu credential do tipo "Web Application" no Google Cloud Console.
-// É necessário para que o Google retorne o idToken no login nativo Android.
 GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  webClientId: env.GOOGLE_WEB_CLIENT_ID,
   scopes: ["profile", "email"],
 });
 

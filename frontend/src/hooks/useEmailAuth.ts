@@ -1,3 +1,4 @@
+import { env } from '@/src/config/env';
 import { api } from '@/src/services/api';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
@@ -27,9 +28,9 @@ export function useEmailAuth(showToast?: (msg: string, type: 'error' | 'warning'
 
       // 3. Dispara o e-mail via EmailJS
       await axios.post('https://api.emailjs.com/api/v1.0/email/send', {
-        service_id: process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID,
-        template_id: process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID,
-        user_id: process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY,
+        service_id: env.EMAILJS_SERVICE_ID,
+        template_id: env.EMAILJS_TEMPLATE_ID,
+        user_id: env.EMAILJS_PUBLIC_KEY,
         template_params: {
           to_email: email,
           code: generatedCode,
