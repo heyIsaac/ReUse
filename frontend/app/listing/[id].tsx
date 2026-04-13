@@ -265,10 +265,14 @@ export default function ListingDetail() {
         }}
       >
         {isOwner ? (
-          <View className="w-full h-14 rounded-2xl flex-row items-center justify-center bg-zinc-200">
-            <Pencil color="#8C6D62" size={18} style={{ marginRight: 8 }} />
-            <Text className="text-[#8C6D62] font-bold text-base">Este anúncio é seu</Text>
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push(`/edit-listing?id=${listing.id}`)}
+            className="w-full h-14 rounded-2xl flex-row items-center justify-center bg-[#642714]"
+          >
+            <Pencil color="#fff" size={18} style={{ marginRight: 8 }} />
+            <Text className="text-white font-bold text-base">Editar anúncio</Text>
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity
             activeOpacity={0.8}

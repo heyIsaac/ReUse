@@ -29,6 +29,7 @@ export default function ProfileScreen() {
   const { data: listings } = useGetListings();
 
   const myListingsCount = listings?.filter(l => l.owner?.id === user?.id).length ?? 0;
+  const impactKg = (myListingsCount * 2.5).toFixed(1).replace('.0', '');
 
   const [emojiOptions, setEmojiOptions] = useState<string[]>([]);
 
@@ -131,7 +132,7 @@ export default function ProfileScreen() {
         <View className="flex-row justify-between bg-white rounded-3xl py-5 mt-2 mb-8">
           <StatItem icon={Package} label="Desapegos" value={myListingsCount.toString()} color="#FF692E" />
           <View className="w-[1px] h-full bg-zinc-100" />
-          <StatItem icon={Leaf} label="Impacto" value="0kg" color="#84DCD9" />
+          <StatItem icon={Leaf} label="Impacto" value={`${impactKg}kg`} color="#84DCD9" />
           <View className="w-[1px] h-full bg-zinc-100" />
           <StatItem icon={Star} label="Avaliação" value="-" color="#F8A720" />
         </View>
@@ -143,7 +144,7 @@ export default function ProfileScreen() {
           </Text>
 
           <View className="bg-white rounded-3xl overflow-hidden">
-            <MenuItem icon={Package} title="Meus Anúncios" />
+            <MenuItem icon={Package} title="Meus Anúncios" badge={myListingsCount > 0 ? `${myListingsCount} ${myListingsCount === 1 ? 'ativo' : 'ativos'}` : undefined} onPress={() => router.push('/my-listings')} />
             <View className="h-[1px] bg-zinc-50 mx-4" />
             <MenuItem icon={Heart} title="Itens Salvos" />
             <View className="h-[1px] bg-zinc-50 mx-4" />
@@ -224,10 +225,11 @@ function StatItem({ icon: Icon, label, value, color }: any) {
   );
 }
 
-function MenuItem({ icon: Icon, title, badge }: any) {
+function MenuItem({ icon: Icon, title, badge, onPress }: any) {
   return (
     <TouchableOpacity
       activeOpacity={0.7}
+      onPress={onPress}
       className="flex-row items-center justify-between p-4 bg-white"
     >
       <View className="flex-row items-center">

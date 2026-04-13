@@ -106,6 +106,43 @@ public class ListingsController : ControllerBase
             }
         });
     }
+
+    [HttpPut("{id}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateListing(int id, [FromBody] CreateListingRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var listing = await _context.Listings.FirstOrDefaultAsync(l => l.Id == id);
+        if (listing == null) return NotFound();
+        if (listing.UserId != userId.Value) return Forbid();
+
+        listing.Title = request.Title;
+        listing.Category = request.Category;
+        listing.Condition = request.Condition;
+        listing.Description = request.Description;
+        listing.Images = request.Images ?? listing.Images;
+
+        await _context.SaveChangesAsync();
+        return Ok(listing);
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteListing(int id)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var listing = await _context.Listings.FirstOrDefaultAsync(l => l.Id == id);
+        if (listing == null) return NotFound();
+        if (listing.UserId != userId.Value) return Forbid();
+
+        _context.Listings.Remove(listing);
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
 }
 
 public class CreateListingRequest
