@@ -29,6 +29,15 @@ public class Listing
     [ForeignKey("UserId")]
     public User User { get; set; } = null!;
 
+    [Column("latitude")]
+    public double? Latitude { get; set; }
+
+    [Column("longitude")]
+    public double? Longitude { get; set; }
+
+    [Column("address")]
+    public string? Address { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

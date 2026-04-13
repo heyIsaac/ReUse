@@ -101,8 +101,6 @@ export default function ProfileScreen() {
             <MenuItem icon={Heart} title="Itens Salvos" onPress={() => router.push('/favorites')} />
             <View className="h-[1px] bg-zinc-50 mx-4" />
             <MenuItem icon={Settings} title="Configurações" onPress={() => router.push('/settings')} />
-            <View className="h-[1px] bg-zinc-50 mx-4" />
-            <MenuItem icon={CircleHelp} title="Ajuda e Suporte" />
           </View>
         </View>
 

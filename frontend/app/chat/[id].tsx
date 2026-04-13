@@ -1,7 +1,7 @@
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { CheckCircle, ChevronLeft, Send } from 'lucide-react-native';
+import { CheckCircle, ChevronLeft, QrCode, ScanLine, Send } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import QRCode from 'react-native-qrcode-svg';
 import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Text } from '@/components/ui/text';
 import { env } from '@/src/config/env';
@@ -48,6 +49,11 @@ export default function ChatRoom() {
   const [inputText, setInputText] = useState('');
   const [connection, setConnection] = useState<any>(null);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [qrData, setQrData] = useState<string | null>(null);
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+
+  const isOwner = currentUser?.id === room?.ownerId;
+  const isInterested = currentUser?.id === room?.interestedId;
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -115,6 +121,18 @@ export default function ChatRoom() {
     }
   };
 
+  const handleGenerateQr = async () => {
+    setIsGeneratingQr(true);
+    try {
+      const { data } = await api.post(`/chat/${chatRoomId}/generate-qr`);
+      setQrData(data.qrData);
+    } catch (err: any) {
+      Alert.alert('', err.response?.data?.message || 'Erro ao gerar QR.');
+    } finally {
+      setIsGeneratingQr(false);
+    }
+  };
+
   const handleComplete = () => {
     Alert.alert(
       'Marcar como entregue',
@@ -133,7 +151,7 @@ export default function ChatRoom() {
               router.push(`/rate?chatRoomId=${chatRoomId}&userName=${encodeURIComponent(room?.otherUser?.name || 'Usuário')}`);
             } catch (err) {
               console.error('Erro ao completar:', err);
-              alert('Erro ao marcar como entregue.');
+              Alert.alert('', 'Erro ao marcar como entregue.');
             } finally {
               setIsCompleting(false);
             }
@@ -186,24 +204,51 @@ export default function ChatRoom() {
           </Text>
         </View>
 
-        {!isCompleted && (
-          <TouchableOpacity onPress={handleComplete} disabled={isCompleting} className="ml-2 p-2">
-            {isCompleting ? (
-              <ActivityIndicator size="small" color="#84DCD9" />
-            ) : (
-              <CheckCircle color="#84DCD9" size={24} />
-            )}
-          </TouchableOpacity>
-        )}
       </View>
 
-      {/* Completed banner */}
-      {isCompleted && (
+      {/* QR / Status banner */}
+      {isCompleted ? (
         <View className="bg-[#84DCD9]/15 px-5 py-3 flex-row items-center">
           <CheckCircle color="#0D9488" size={16} style={{ marginRight: 8 }} />
           <Text className="text-[#0D9488] text-xs font-bold">Item entregue — negociação concluída</Text>
         </View>
-      )}
+      ) : qrData && isOwner ? (
+        <View className="bg-white px-5 py-4 items-center border-b border-zinc-100">
+          <Text className="text-[#642714] font-bold text-sm mb-3">Mostre este QR para o interessado</Text>
+          <View className="bg-white p-4 rounded-2xl border border-zinc-200">
+            <QRCode value={qrData} size={200} />
+          </View>
+          <Text className="text-[#8C6D62] text-xs mt-2">O interessado escaneia para confirmar a entrega</Text>
+        </View>
+      ) : !isCompleted ? (
+        <View className="flex-row px-5 py-3 gap-2 border-b border-zinc-100 bg-white">
+          {isOwner && (
+            <TouchableOpacity
+              onPress={handleGenerateQr}
+              disabled={isGeneratingQr}
+              className="flex-1 flex-row items-center justify-center bg-[#642714] py-3 rounded-xl"
+            >
+              {isGeneratingQr ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <>
+                  <QrCode color="white" size={18} style={{ marginRight: 6 }} />
+                  <Text className="text-white font-bold text-xs">Gerar QR</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+          {isInterested && (
+            <TouchableOpacity
+              onPress={() => router.push(`/qr-scanner?chatRoomId=${chatRoomId}`)}
+              className="flex-1 flex-row items-center justify-center bg-[#FF692E] py-3 rounded-xl"
+            >
+              <ScanLine color="white" size={18} style={{ marginRight: 6 }} />
+              <Text className="text-white font-bold text-xs">Escanear QR</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : null}
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         {isLoadingHistory ? (

@@ -6,6 +6,7 @@ import { Star } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   TextInput,
   TouchableOpacity,
   View,
@@ -28,11 +29,11 @@ export default function RateScreen() {
         score,
         comment: comment.trim() || null,
       });
-      alert('Avaliação enviada!');
+      Alert.alert('', 'Avaliação enviada!');
       router.back();
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Erro ao enviar avaliação.';
-      alert(msg);
+      Alert.alert('', msg);
     } finally {
       setIsSending(false);
     }

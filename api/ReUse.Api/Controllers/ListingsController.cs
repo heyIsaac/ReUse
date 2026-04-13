@@ -71,7 +71,10 @@ public class ListingsController : ControllerBase
             Condition = request.Condition,
             Description = request.Description,
             Images = request.Images ?? new List<string>(),
-            UserId = userId.Value
+            UserId = userId.Value,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude,
+            Address = request.Address
         };
 
         _context.Listings.Add(listing);
@@ -152,4 +155,7 @@ public class CreateListingRequest
     public string Condition { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public List<string> Images { get; set; } = new List<string>();
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public string? Address { get; set; }
 }

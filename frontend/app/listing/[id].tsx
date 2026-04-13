@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, MessageCircle, Package, Pencil } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
+  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -156,7 +157,7 @@ export default function ListingDetail() {
     } catch (error: any) {
       // Aqui está a magia! Vamos ver exatamente o que o C# não gostou
       console.error("❌ O C# rejeitou a requisição (Erro 400):", error.response?.data || error.message);
-      alert("Ops! Não foi possível abrir o chat.");
+      Alert.alert('', 'Ops! Não foi possível abrir o chat.');
     }
   };
 

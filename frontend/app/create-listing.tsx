@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useRouter as useExpoRouter } from 'expo-router';
-import { Camera, ChevronLeft, ImageIcon, X } from 'lucide-react-native';
+import { Camera, ChevronLeft, ImageIcon, MapPin, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -96,6 +97,23 @@ export default function CreateListing() {
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'saving'>('idle');
   const isSubmitting = uploadState !== 'idle';
+
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [address, setAddress] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+      const [geo] = await Location.reverseGeocodeAsync(loc.coords);
+      if (geo) {
+        const parts = [geo.district, geo.subregion, geo.city].filter(Boolean);
+        setAddress(parts.join(', '));
+      }
+    })();
+  }, []);
 
   const progressWidth = useSharedValue(1 / TOTAL_STEPS);
 
@@ -243,17 +261,23 @@ export default function CreateListing() {
       const imageUrls = await uploadImages(data.images);
 
       setUploadState('saving');
-      await createListing.mutateAsync({ ...data, images: imageUrls });
+      await createListing.mutateAsync({
+        ...data,
+        images: imageUrls,
+        latitude: userLocation?.latitude,
+        longitude: userLocation?.longitude,
+        address: address || undefined,
+      } as any);
 
       await SecureStore.deleteItemAsync(DRAFT_KEY);
-      alert('Desapego publicado com sucesso! 🎉');
+      Alert.alert('', 'Desapego publicado com sucesso!');
       reset();
       setCurrentStep(0);
       progressWidth.value = withTiming(1 / TOTAL_STEPS);
       router.push('/(tabs)');
     } catch (err) {
       console.error('[CreateListing] onSubmit error:', err);
-      alert('Não foi possível publicar. Verifique sua conexão e tente novamente.');
+      Alert.alert('', 'Não foi possível publicar. Verifique sua conexão e tente novamente.');
     } finally {
       setUploadState('idle');
     }
@@ -346,17 +370,27 @@ export default function CreateListing() {
                 <View className="flex-row flex-wrap gap-3">
                   {/* Botão de adicionar foto */}
                   {selectedImages.length < 5 && (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={handleAddImage}
-                      accessibilityLabel="Adicionar foto"
-                      accessibilityRole="button"
-                      className="bg-white border-2 border-dashed border-[#FF692E]/40 rounded-2xl"
-                      style={{ width: '30%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <Camera color="#FF692E" size={22} style={{ marginBottom: 4 }} />
-                      <Text className="text-[#FF692E] font-bold text-xs">Adicionar</Text>
-                    </TouchableOpacity>
+                    <View style={{ width: '30%', aspectRatio: 1 }}>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={handleAddImage}
+                        accessibilityLabel="Adicionar foto"
+                        accessibilityRole="button"
+                        style={{
+                          flex: 1,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'white',
+                          borderWidth: 2,
+                          borderStyle: 'dashed',
+                          borderColor: 'rgba(255,105,46,0.4)',
+                          borderRadius: 16,
+                        }}
+                      >
+                        <Camera color="#FF692E" size={22} style={{ marginBottom: 4 }} />
+                        <Text className="text-[#FF692E] font-bold text-xs">Adicionar</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
 
                   {/* Miniaturas das fotos */}

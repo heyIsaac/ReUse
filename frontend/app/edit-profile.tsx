@@ -89,7 +89,7 @@ export default function EditProfileScreen() {
         const urls = await uploadImages([result.assets[0].uri]);
         setSelectedAvatar(urls[0]);
       } catch (err) {
-        alert('Erro ao enviar foto.');
+        Alert.alert('', 'Erro ao enviar foto.');
       } finally {
         setIsUploading(false);
       }
@@ -114,7 +114,7 @@ export default function EditProfileScreen() {
           const urls = await uploadImages([result.assets[0].uri]);
           setSelectedAvatar(urls[0]);
         } catch (err) {
-          alert('Erro ao enviar foto.');
+          Alert.alert('', 'Erro ao enviar foto.');
         } finally {
           setIsUploading(false);
         }
@@ -159,7 +159,7 @@ export default function EditProfileScreen() {
       router.back();
     } catch (err) {
       console.error('Erro ao salvar perfil:', err);
-      alert('Erro ao salvar. Tente novamente.');
+      Alert.alert('', 'Erro ao salvar. Tente novamente.');
     } finally {
       setIsSaving(false);
     }
