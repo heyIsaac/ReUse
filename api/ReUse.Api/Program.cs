@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using ReUse.Api.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using ReUse.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,9 +25,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var supabaseJwtSecret = builder.Configuration["Supabase:JwtSecret"]
-    ?? "PLACEHOLDER_KEY_CONFIGURE_Supabase__JwtSecret_ENV_VAR_32chars!";
-var secretKey = Encoding.UTF8.GetBytes(supabaseJwtSecret);
+var supabaseUrl = builder.Configuration["Supabase:Url"] ?? "";
+var jwksUrl = $"{supabaseUrl}/auth/v1/.well-known/jwks.json";
 
 builder.Services.AddAuthentication(options =>
     {
@@ -37,13 +35,13 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
+        options.Authority = $"{supabaseUrl}/auth/v1";
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = false,
             ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(secretKey)
         };
 
         options.Events = new JwtBearerEvents
