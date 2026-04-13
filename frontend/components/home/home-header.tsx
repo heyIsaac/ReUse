@@ -32,7 +32,7 @@ export function HomeHeader() {
       <View className="flex-row items-center gap-2">
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.push('/qr-scanner?chatRoomId=')}
+          onPress={() => router.push('/qr-scanner')}
           className="bg-white p-2 rounded-full shadow-sm"
         >
           <ScanLine color="#642714" size={22} strokeWidth={2.5} />

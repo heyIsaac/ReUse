@@ -9,6 +9,7 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   TextInput,
   TouchableOpacity,
@@ -51,6 +52,7 @@ export default function ChatRoom() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [qrData, setQrData] = useState<string | null>(null);
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const isOwner = currentUser?.id === room?.ownerId;
   const isInterested = currentUser?.id === room?.interestedId;
@@ -126,6 +128,7 @@ export default function ChatRoom() {
     try {
       const res = await api.post(`/chat/${chatRoomId}/generate-qr`);
       setQrData(res.data.qrData);
+      setShowQrModal(true);
     } catch (err: any) {
       console.error('QR error:', err.response?.status, err.response?.data);
       Alert.alert('', err.response?.data?.message || `Erro ao gerar QR (${err.response?.status || 'rede'})`);
@@ -213,14 +216,6 @@ export default function ChatRoom() {
           <CheckCircle color="#0D9488" size={16} style={{ marginRight: 8 }} />
           <Text className="text-[#0D9488] text-xs font-bold">Item entregue — negociação concluída</Text>
         </View>
-      ) : qrData && isOwner ? (
-        <View className="bg-white px-5 py-4 items-center border-b border-zinc-100">
-          <Text className="text-[#642714] font-bold text-sm mb-3">Mostre este QR para o interessado</Text>
-          <View className="bg-white p-4 rounded-2xl border border-zinc-200">
-            <QRCode value={qrData} size={200} />
-          </View>
-          <Text className="text-[#8C6D62] text-xs mt-2">O interessado escaneia para confirmar a entrega</Text>
-        </View>
       ) : room ? (
         <View className="flex-row px-5 py-3 gap-2 border-b border-zinc-100 bg-white">
           {(isOwner || (!isOwner && !isInterested)) && (
@@ -297,6 +292,24 @@ export default function ChatRoom() {
           </View>
         )}
       </KeyboardAvoidingView>
+      {/* QR Code Modal */}
+      <Modal visible={showQrModal} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center' }}>
+          <View className="bg-white rounded-3xl mx-6 p-8 items-center" style={{ width: '85%' }}>
+            <Text className="text-[#642714] font-bold text-lg mb-2">QR Code de Entrega</Text>
+            <Text className="text-[#8C6D62] text-xs text-center mb-6">
+              Mostre este código para o interessado escanear e confirmar o recebimento.
+            </Text>
+            {qrData && <QRCode value={qrData} size={220} />}
+            <TouchableOpacity
+              onPress={() => setShowQrModal(false)}
+              className="mt-6 bg-[#642714] w-full py-4 rounded-2xl items-center"
+            >
+              <Text className="text-white font-bold text-sm">Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScreenLayout>
   );
 }
