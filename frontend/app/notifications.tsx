@@ -73,6 +73,27 @@ export default function NotificationsScreen() {
     } catch {}
   };
 
+  const handleNotificationPress = (item: NotificationItem) => {
+    markRead(item.id);
+    switch (item.type) {
+      case 'welcome':
+        router.push('/create-listing');
+        break;
+      case 'new_interest':
+        router.push('/(tabs)/chat');
+        break;
+      case 'completed':
+        router.push('/(tabs)/chat');
+        break;
+      case 'rating':
+        router.push('/(tabs)/profile');
+        break;
+      case 'favorite_donated':
+        router.push('/favorites');
+        break;
+    }
+  };
+
   const renderItem = ({ item }: { item: NotificationItem }) => {
     const Icon = ICON_MAP[item.type] || Bell;
     const color = COLOR_MAP[item.type] || '#8C6D62';
@@ -80,7 +101,7 @@ export default function NotificationsScreen() {
     return (
       <TouchableOpacity
         activeOpacity={0.7}
-        onPress={() => markRead(item.id)}
+        onPress={() => handleNotificationPress(item)}
         className={`flex-row p-4 mb-2 rounded-2xl ${item.read ? 'bg-white' : 'bg-[#FF692E]/5'}`}
       >
         <View
