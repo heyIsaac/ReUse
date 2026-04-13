@@ -2,12 +2,15 @@ import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Text } from '@/components/ui/text';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { supabase } from '@/src/services/supabase';
+import { uploadImages } from '@/src/services/supabaseStorage';
 import { useQueryClient } from '@tanstack/react-query';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { Camera, ChevronLeft, ImageIcon } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ScrollView,
   TextInput,
@@ -53,6 +56,7 @@ export default function EditProfileScreen() {
   const [selectedAvatar, setSelectedAvatar] = useState('');
   const [avatars, setAvatars] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setAvatars(generateAvatars());
@@ -71,6 +75,62 @@ export default function EditProfileScreen() {
     };
     fetchMeta();
   }, [user]);
+
+  const pickFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+    if (!result.canceled) {
+      setIsUploading(true);
+      try {
+        const urls = await uploadImages([result.assets[0].uri]);
+        setSelectedAvatar(urls[0]);
+      } catch (err) {
+        alert('Erro ao enviar foto.');
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à câmera.');
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+      if (!result.canceled) {
+        setIsUploading(true);
+        try {
+          const urls = await uploadImages([result.assets[0].uri]);
+          setSelectedAvatar(urls[0]);
+        } catch (err) {
+          alert('Erro ao enviar foto.');
+        } finally {
+          setIsUploading(false);
+        }
+      }
+    } catch {
+      Alert.alert('Câmera indisponível', 'A câmera não está disponível neste dispositivo.');
+    }
+  };
+
+  const handlePickPhoto = () => {
+    Alert.alert('Foto de perfil', 'Escolha uma opção', [
+      { text: 'Tirar foto', onPress: takePhoto },
+      { text: 'Galeria', onPress: pickFromGallery },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -117,13 +177,27 @@ export default function EditProfileScreen() {
         <Text variant="h3" className="text-[#642714]">Editar Perfil</Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Avatar atual */}
-        {selectedAvatar ? (
-          <View className="items-center mb-6">
-            <Image source={{ uri: selectedAvatar }} className="w-24 h-24 rounded-full bg-zinc-100" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        {/* Avatar atual + botão de trocar por foto */}
+        <View className="items-center mb-6">
+          <View className="relative">
+            {isUploading ? (
+              <View className="w-28 h-28 rounded-full bg-zinc-200 items-center justify-center">
+                <ActivityIndicator size="large" color="#FF692E" />
+              </View>
+            ) : (
+              <Image source={{ uri: selectedAvatar || `https://api.dicebear.com/9.x/fun-emoji/png?seed=default` }} className="w-28 h-28 rounded-full bg-zinc-200" />
+            )}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handlePickPhoto}
+              className="absolute bottom-0 right-0 bg-[#FF692E] p-2.5 rounded-full border-4 border-[#FDF9F1]"
+            >
+              <Camera size={16} color="#FFFFFF" strokeWidth={2.5} />
+            </TouchableOpacity>
           </View>
-        ) : null}
+          <Text className="text-[#8C6D62] text-xs mt-2">Toque para usar foto real</Text>
+        </View>
 
         {/* Nome */}
         <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">Nome</Text>
@@ -168,8 +242,8 @@ export default function EditProfileScreen() {
           ))}
         </View>
 
-        {/* Avatares */}
-        <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">Trocar avatar</Text>
+        {/* Avatares pré-definidos */}
+        <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">Ou escolha um avatar</Text>
         <View className="flex-row flex-wrap gap-3 mb-8">
           {avatars.map((url) => (
             <TouchableOpacity
