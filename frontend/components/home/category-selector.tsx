@@ -1,12 +1,27 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useGetCategories } from '@/src/services/useCategories';
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-export function CategorySelector() {
-  const [selected, setSelected] = useState('Todos');
-  const { data: categories } = useGetCategories();
+interface CategorySelectorProps {
+  selected: string;
+  onSelect: (category: string) => void;
+}
 
+export function CategorySelector({ selected, onSelect }: CategorySelectorProps) {
+  const { data: categories } = useGetCategories();
   const items = ['Todos', ...(categories?.map(c => c.name) ?? [])];
+
+  useEffect(() => {
+    AsyncStorage.getItem('selectedCategory').then((saved) => {
+      if (saved && items.includes(saved)) onSelect(saved);
+    });
+  }, [categories]);
+
+  const handleSelect = (category: string) => {
+    onSelect(category);
+    AsyncStorage.setItem('selectedCategory', category);
+  };
 
   return (
     <View className="mb-6">
@@ -20,7 +35,7 @@ export function CategorySelector() {
           return (
             <TouchableOpacity
               key={category}
-              onPress={() => setSelected(category)}
+              onPress={() => handleSelect(category)}
               activeOpacity={0.7}
               className={`h-12 px-5 rounded-full items-center justify-center border ${
                 isSelected

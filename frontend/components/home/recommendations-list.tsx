@@ -5,45 +5,60 @@ import { Text } from '@/components/ui/text';
 import { useGetListings } from '@/src/services/useListings';
 import { TouchableOpacity, View } from 'react-native';
 
-export function RecommendationsList() {
+interface RecommendationsListProps {
+  searchQuery?: string;
+  category?: string;
+}
+
+export function RecommendationsList({ searchQuery = '', category = 'Todos' }: RecommendationsListProps) {
   const { data: listings, isLoading, isError, refetch } = useGetListings();
+
+  const query = searchQuery.toLowerCase().trim();
+
+  const filtered = listings?.filter((item) => {
+    const matchesCategory = category === 'Todos' || item.category === category;
+    const matchesSearch =
+      !query ||
+      item.title.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query);
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <View className="pb-24">
       <View className="flex-row justify-between items-end mb-4">
-        <Text variant="h4" className="text-[#642714] font-black">Novos desapegos</Text>
+        <Text variant="h4" className="text-[#642714] font-black">
+          {query ? `Resultados para "${searchQuery}"` : 'Novos desapegos'}
+        </Text>
         <TouchableOpacity activeOpacity={0.7} onPress={() => refetch()}>
           <Text className="text-[#FF692E] text-sm font-bold">Atualizar</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Loading state */}
       {isLoading && (
         <View className="flex-row flex-wrap justify-between">
           {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} />)}
         </View>
       )}
 
-      {/* Error state */}
-      {isError && !isLoading && (
-        <ErrorCard refetch={refetch} />
-      )}
+      {isError && !isLoading && <ErrorCard refetch={refetch} />}
 
-      {/* Empty state */}
-      {!isLoading && !isError && listings?.length === 0 && (
+      {!isLoading && !isError && (!filtered || filtered.length === 0) && (
         <View className="items-center py-12">
-          <Text className="text-4xl mb-3">🌱</Text>
-          <Text className="text-[#642714] font-bold text-base mb-1">Sem desapegos ainda</Text>
+          <Text className="text-4xl mb-3">{query ? '🔍' : '🌱'}</Text>
+          <Text className="text-[#642714] font-bold text-base mb-1">
+            {query ? 'Nenhum resultado' : 'Sem desapegos ainda'}
+          </Text>
           <Text className="text-[#8C6D62] text-sm text-center">
-            Seja o primeiro a publicar um item!
+            {query ? 'Tente buscar com outras palavras.' : 'Seja o primeiro a publicar um item!'}
           </Text>
         </View>
       )}
 
-      {/* listings */}
-      {!isLoading && !isError && listings && listings.length > 0 && (
+      {!isLoading && !isError && filtered && filtered.length > 0 && (
         <View className="flex-row flex-wrap justify-between">
-          {listings.map((item) => (
+          {filtered.map((item) => (
             <ProductCard key={item.id} item={item} />
           ))}
         </View>
@@ -51,4 +66,3 @@ export function RecommendationsList() {
     </View>
   );
 }
-

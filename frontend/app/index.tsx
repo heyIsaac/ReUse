@@ -1,5 +1,5 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import * as SecureStore from "expo-secure-store";
 import { supabase } from "@/src/services/supabase";
 import { StatusBar } from "expo-status-bar";
 import { ChevronRight, Gift, Leaf, Users } from "lucide-react-native";
@@ -48,7 +48,7 @@ export default function OnboardingScreen() {
         return;
       }
 
-      const hasCompleted = await SecureStore.getItemAsync("hasCompletedOnboarding");
+      const hasCompleted = await AsyncStorage.getItem("hasCompletedOnboarding");
       if (hasCompleted === "true") {
         router.replace("/(auth)/login");
       } else {
@@ -75,7 +75,7 @@ export default function OnboardingScreen() {
   }).current;
 
   const completeOnboarding = async () => {
-    await SecureStore.setItemAsync("hasCompletedOnboarding", "true");
+    await AsyncStorage.setItem("hasCompletedOnboarding", "true");
     router.replace("/(auth)/login");
   };
 

@@ -1,8 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter as useExpoRouter } from 'expo-router';
 import { Camera, ChevronLeft, ImageIcon, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   Alert,
@@ -124,6 +125,33 @@ export default function CreateListing() {
 
   const selectedImages = watch('images');
   const copy = STEP_COPY[currentStep];
+  const allFields = watch();
+
+  const DRAFT_KEY = 'draftListing';
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    AsyncStorage.getItem(DRAFT_KEY).then((saved) => {
+      if (!saved) return;
+      try {
+        const draft = JSON.parse(saved);
+        if (draft.title) setValue('title', draft.title);
+        if (draft.category) setValue('category', draft.category);
+        if (draft.condition) setValue('condition', draft.condition);
+        if (draft.description) setValue('description', draft.description);
+      } catch {}
+    });
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const { title, category, condition, description } = allFields;
+      if (title || category || condition || description) {
+        AsyncStorage.setItem(DRAFT_KEY, JSON.stringify({ title, category, condition, description }));
+      }
+    }, 1000);
+  }, [allFields.title, allFields.category, allFields.condition, allFields.description]);
 
   // ── Avança o passo com validação dos campos do passo atual ──
   const handleNext = async () => {
@@ -217,6 +245,7 @@ export default function CreateListing() {
       setUploadState('saving');
       await createListing.mutateAsync({ ...data, images: imageUrls });
 
+      await AsyncStorage.removeItem(DRAFT_KEY);
       alert('Desapego publicado com sucesso! 🎉');
       reset();
       setCurrentStep(0);
