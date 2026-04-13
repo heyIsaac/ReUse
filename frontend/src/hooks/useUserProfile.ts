@@ -19,7 +19,7 @@ export function useUserProfile() {
           || `https://api.dicebear.com/9.x/fun-emoji/png?seed=${user.id}`,
       };
     },
-    staleTime: 1000 * 60 * 60 * 24,
+    staleTime: 0,
   });
 }
 

@@ -19,12 +19,16 @@ import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useUpdateAvatar, useUserProfile } from '@/src/hooks/useUserProfile';
+import { useGetListings } from '@/src/services/useListings';
 
 export default function ProfileScreen() {
   const router = useExpoRouter();
 
   const { data: user, isLoading } = useUserProfile();
   const updateAvatar = useUpdateAvatar();
+  const { data: listings } = useGetListings();
+
+  const myListingsCount = listings?.filter(l => l.owner?.id === user?.id).length ?? 0;
 
   const [emojiOptions, setEmojiOptions] = useState<string[]>([]);
 
@@ -81,7 +85,7 @@ export default function ProfileScreen() {
 
   return (
     <ScreenLayout className="bg-[#FDF9F1]">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
         {/* HEADER DO PERFIL */}
         <View className="items-center pt-8 pb-6">
@@ -92,7 +96,7 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <Image
-                source={{ uri: user?.avatarUrl || 'https://api.dicebear.com/9.x/fun-emoji/png?seed=Isaac' }}
+                source={{ uri: user?.avatarUrl || `https://api.dicebear.com/9.x/fun-emoji/png?seed=${user?.id}` }}
                 className="w-28 h-28 rounded-full bg-zinc-200"
               />
             )}
@@ -114,10 +118,10 @@ export default function ProfileScreen() {
           ) : (
             <>
               <Text variant="h3" className="text-[#642714] mt-5">
-                {user?.name || "Isaac Lima"}
+                {user?.name || "Usuário"}
               </Text>
               <Text className="text-[#8C6D62] text-sm mt-1">
-                {user?.email || "isaac@mitti.com"}
+                {user?.email || ""}
               </Text>
             </>
           )}
@@ -125,11 +129,11 @@ export default function ProfileScreen() {
 
         {/* ESTATÍSTICAS */}
         <View className="flex-row justify-between bg-white rounded-3xl py-5 mt-2 mb-8">
-          <StatItem icon={Package} label="Desapegos" value="12" color="#FF692E" />
+          <StatItem icon={Package} label="Desapegos" value={myListingsCount.toString()} color="#FF692E" />
           <View className="w-[1px] h-full bg-zinc-100" />
-          <StatItem icon={Leaf} label="Impacto" value="15kg" color="#84DCD9" />
+          <StatItem icon={Leaf} label="Impacto" value="0kg" color="#84DCD9" />
           <View className="w-[1px] h-full bg-zinc-100" />
-          <StatItem icon={Star} label="Avaliação" value="5.0" color="#F8A720" />
+          <StatItem icon={Star} label="Avaliação" value="-" color="#F8A720" />
         </View>
 
         {/* MENU DE OPÇÕES */}
@@ -139,7 +143,7 @@ export default function ProfileScreen() {
           </Text>
 
           <View className="bg-white rounded-3xl overflow-hidden">
-            <MenuItem icon={Package} title="Meus Anúncios" badge="2 ativos" />
+            <MenuItem icon={Package} title="Meus Anúncios" />
             <View className="h-[1px] bg-zinc-50 mx-4" />
             <MenuItem icon={Heart} title="Itens Salvos" />
             <View className="h-[1px] bg-zinc-50 mx-4" />
