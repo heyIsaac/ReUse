@@ -247,7 +247,7 @@ public class ChatController : ControllerBase
 
         var room = await _context.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId);
         if (room == null) return NotFound();
-        if (room.OwnerId != userId) return BadRequest(new { Message = "Apenas o dono pode gerar o QR." });
+        if (room.OwnerId != userId && room.InterestedId != userId) return Forbid();
         if (room.Status == "completed") return BadRequest(new { Message = "Negociação já concluída." });
 
         room.QrToken = Guid.NewGuid().ToString("N");
@@ -264,7 +264,7 @@ public class ChatController : ControllerBase
 
         var room = await _context.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId);
         if (room == null) return NotFound();
-        if (room.InterestedId != userId) return BadRequest(new { Message = "Apenas o interessado pode confirmar." });
+        if (room.OwnerId != userId && room.InterestedId != userId) return Forbid();
         if (room.Status == "completed") return BadRequest(new { Message = "Já concluída." });
         if (room.QrToken == null || room.QrToken != req.Token) return BadRequest(new { Message = "QR Code inválido." });
 
