@@ -22,6 +22,118 @@ public class ChatController : ControllerBase
         return Guid.TryParse(sub, out var id) ? id : null;
     }
 
+    [HttpGet("my-listings")]
+    public async Task<IActionResult> GetMyListingsWithChats()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var listingIds = await _context.ChatRooms
+            .Where(r => r.OwnerId == userId)
+            .Select(r => r.ListingId)
+            .Distinct()
+            .ToListAsync();
+
+        var results = new List<object>();
+        foreach (var lid in listingIds)
+        {
+            var listing = await _context.Listings.FindAsync(lid);
+            if (listing == null) continue;
+
+            var count = await _context.ChatRooms
+                .CountAsync(r => r.ListingId == lid && r.OwnerId == userId);
+
+            var lastMsg = await _context.ChatMessages
+                .Where(m => _context.ChatRooms.Any(r => r.Id == m.ChatRoomId && r.ListingId == lid && r.OwnerId == userId))
+                .OrderByDescending(m => m.CreatedAt)
+                .Select(m => new { m.Text, m.CreatedAt })
+                .FirstOrDefaultAsync();
+
+            results.Add(new
+            {
+                ListingId = listing.Id,
+                listing.Title,
+                Image = listing.Images.FirstOrDefault(),
+                InterestedCount = count,
+                LastMessage = lastMsg
+            });
+        }
+
+        return Ok(results);
+    }
+
+    [HttpGet("my-interests")]
+    public async Task<IActionResult> GetMyInterests()
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var rooms = await _context.ChatRooms
+            .Where(r => r.InterestedId == userId)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
+        var results = new List<object>();
+        foreach (var room in rooms)
+        {
+            var listing = await _context.Listings.FindAsync(room.ListingId);
+            var owner = await _context.Profiles.FindAsync(room.OwnerId);
+            var lastMsg = await _context.ChatMessages
+                .Where(m => m.ChatRoomId == room.Id)
+                .OrderByDescending(m => m.CreatedAt)
+                .Select(m => new { m.Text, m.CreatedAt, m.SenderId })
+                .FirstOrDefaultAsync();
+
+            results.Add(new
+            {
+                RoomId = room.Id,
+                room.Status,
+                Listing = listing == null ? null : new { listing.Id, listing.Title, Image = listing.Images.FirstOrDefault() },
+                Owner = owner == null ? null : new { owner.Id, owner.Name, owner.AvatarUrl },
+                LastMessage = lastMsg
+            });
+        }
+
+        return Ok(results);
+    }
+
+    [HttpGet("listing/{listingId}/conversations")]
+    public async Task<IActionResult> GetListingConversations(int listingId)
+    {
+        var userId = GetUserId();
+        if (userId == null) return Unauthorized();
+
+        var listing = await _context.Listings.FindAsync(listingId);
+        if (listing == null) return NotFound();
+        if (listing.UserId != userId) return Forbid();
+
+        var rooms = await _context.ChatRooms
+            .Where(r => r.ListingId == listingId && r.OwnerId == userId)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
+        var results = new List<object>();
+        foreach (var room in rooms)
+        {
+            var interested = await _context.Profiles.FindAsync(room.InterestedId);
+            var lastMsg = await _context.ChatMessages
+                .Where(m => m.ChatRoomId == room.Id)
+                .OrderByDescending(m => m.CreatedAt)
+                .Select(m => new { m.Text, m.CreatedAt, m.SenderId })
+                .FirstOrDefaultAsync();
+
+            results.Add(new
+            {
+                RoomId = room.Id,
+                room.Status,
+                Interested = interested == null ? null : new { interested.Id, interested.Name, interested.AvatarUrl },
+                LastMessage = lastMsg
+            });
+        }
+
+        return Ok(results);
+    }
+
     [HttpGet("rooms")]
     public async Task<IActionResult> GetMyRooms()
     {
@@ -86,6 +198,9 @@ public class ChatController : ControllerBase
     {
         var userId = GetUserId();
         if (userId == null) return Unauthorized();
+
+        if (req.OwnerId == userId)
+            return BadRequest(new { Message = "Você não pode iniciar um chat consigo mesmo." });
 
         var existingRoom = await _context.ChatRooms
             .FirstOrDefaultAsync(r => r.ListingId == req.ListingId && r.InterestedId == userId);
