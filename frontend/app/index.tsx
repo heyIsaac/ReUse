@@ -2,10 +2,10 @@ import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { supabase } from "@/src/services/supabase";
 import { StatusBar } from "expo-status-bar";
-import { ChevronRight, Gift, Leaf, Users } from "lucide-react-native";
+import { ChevronRight, Gift, Leaf, Recycle, Users } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { FlatList, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
-import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, { Extrapolation, FadeIn, FadeInDown, FadeInUp, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SLIDES = [
@@ -56,7 +56,7 @@ export default function OnboardingScreen() {
       }
     }
     checkInitialState();
-  }, [router]);
+  }, []);
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -91,7 +91,32 @@ export default function OnboardingScreen() {
     completeOnboarding();
   };
 
-  if (!isReady) return null;
+  if (!isReady) {
+    return (
+      <View className="flex-1 bg-[#FDF9F1] items-center justify-center">
+        <StatusBar style="dark" />
+        <Animated.View entering={FadeIn.duration(600)} className="items-center">
+          <Animated.View entering={FadeInDown.delay(200).duration(500).springify()}>
+            <View className="w-20 h-20 rounded-full bg-[#FF692E] items-center justify-center mb-6">
+              <Recycle color="white" size={40} />
+            </View>
+          </Animated.View>
+          <Animated.Text
+            entering={FadeInUp.delay(400).duration(500)}
+            style={{ fontSize: 36, fontWeight: '800', color: '#642714', letterSpacing: -1 }}
+          >
+            ReUse
+          </Animated.Text>
+          <Animated.Text
+            entering={FadeInUp.delay(600).duration(500)}
+            style={{ fontSize: 14, color: '#8C6D62', marginTop: 8 }}
+          >
+            Dê uma nova vida aos seus itens
+          </Animated.Text>
+        </Animated.View>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white dark:bg-zinc-950">
