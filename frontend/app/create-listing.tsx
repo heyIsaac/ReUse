@@ -1,10 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { useRouter as useExpoRouter } from 'expo-router';
-import { Camera, ChevronLeft, X } from 'lucide-react-native';
-import React, { useState } from 'react';
+import { Camera, ChevronLeft, ImageIcon, MapPin, X } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -25,8 +28,9 @@ import * as z from 'zod';
 import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
+import { useGetCategories } from '@/src/services/useCategories';
 import { useCreateListing } from '@/src/services/useListings';
-import { uploadImagesToCloudinary } from '@/src/services/cloudinaryUpload';
+import { uploadImages } from '@/src/services/supabaseStorage';
 
 // ─────────────────────────────────────────────
 // 1. SCHEMA
@@ -49,7 +53,7 @@ type DonateFormData = z.infer<typeof donateSchema>;
 // ─────────────────────────────────────────────
 // 2. CONSTANTES
 // ─────────────────────────────────────────────
-const CATEGORIES = ['Roupas', 'Calçados', 'Eletrônicos', 'Móveis', 'Livros'];
+const FALLBACK_CATEGORIES = ['Roupas', 'Calçados', 'Eletrônicos', 'Móveis', 'Livros'];
 const CONDITIONS = ['Novo', 'Seminovo', 'Com marcas de uso'];
 const TOTAL_STEPS = 3;
 
@@ -86,11 +90,30 @@ const STEP_COPY = [
 export default function CreateListing() {
   const router = useExpoRouter();
   const createListing = useCreateListing();
+  const { data: dbCategories } = useGetCategories();
+  const CATEGORIES = dbCategories?.map(c => c.name) ?? FALLBACK_CATEGORIES;
 
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'saving'>('idle');
   const isSubmitting = uploadState !== 'idle';
+
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [address, setAddress] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+      const [geo] = await Location.reverseGeocodeAsync(loc.coords);
+      if (geo) {
+        const parts = [geo.district, geo.subregion, geo.city].filter(Boolean);
+        setAddress(parts.join(', '));
+      }
+    })();
+  }, []);
 
   const progressWidth = useSharedValue(1 / TOTAL_STEPS);
 
@@ -120,6 +143,33 @@ export default function CreateListing() {
 
   const selectedImages = watch('images');
   const copy = STEP_COPY[currentStep];
+  const allFields = watch();
+
+  const DRAFT_KEY = 'draftListing';
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    SecureStore.getItemAsync(DRAFT_KEY).then((saved) => {
+      if (!saved) return;
+      try {
+        const draft = JSON.parse(saved);
+        if (draft.title) setValue('title', draft.title);
+        if (draft.category) setValue('category', draft.category);
+        if (draft.condition) setValue('condition', draft.condition);
+        if (draft.description) setValue('description', draft.description);
+      } catch {}
+    });
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const { title, category, condition, description } = allFields;
+      if (title || category || condition || description) {
+        SecureStore.setItemAsync(DRAFT_KEY, JSON.stringify({ title, category, condition, description }));
+      }
+    }, 1000);
+  }, [allFields.title, allFields.category, allFields.condition, allFields.description]);
 
   // ── Avança o passo com validação dos campos do passo atual ──
   const handleNext = async () => {
@@ -150,20 +200,49 @@ export default function CreateListing() {
     });
   };
 
-  // ── Adiciona imagem da galeria ──
-  const pickImage = async () => {
-    if (selectedImages.length >= 5) return;
+  const addImageFromResult = (result: ImagePicker.ImagePickerResult) => {
+    if (!result.canceled) {
+      setValue('images', [...selectedImages, result.assets[0].uri], {
+        shouldValidate: true,
+      });
+    }
+  };
+
+  const pickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 5],
       quality: 0.4,
     });
-    if (!result.canceled) {
-      setValue('images', [...selectedImages, result.assets[0].uri], {
-        shouldValidate: true,
-      });
+    addImageFromResult(result);
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Precisamos de acesso à câmera para tirar fotos.');
+      return;
     }
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 5],
+        quality: 0.4,
+      });
+      addImageFromResult(result);
+    } catch {
+      Alert.alert('Câmera indisponível', 'A câmera não está disponível neste dispositivo.');
+    }
+  };
+
+  const handleAddImage = () => {
+    if (selectedImages.length >= 5) return;
+    Alert.alert('Adicionar foto', 'Escolha uma opção', [
+      { text: 'Tirar foto', onPress: takePhoto },
+      { text: 'Galeria', onPress: pickFromGallery },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   };
 
   // ── Remove imagem pelo índice ──
@@ -178,22 +257,27 @@ export default function CreateListing() {
   // ── Submissão final ──
   const onSubmit = async (data: DonateFormData) => {
     try {
-      // Phase 1: upload photos directly to Cloudinary
       setUploadState('uploading');
-      const cloudinaryUrls = await uploadImagesToCloudinary(data.images);
+      const imageUrls = await uploadImages(data.images);
 
-      // Phase 2: save the listing with the final CDN URLs
       setUploadState('saving');
-      await createListing.mutateAsync({ ...data, images: cloudinaryUrls });
+      await createListing.mutateAsync({
+        ...data,
+        images: imageUrls,
+        latitude: userLocation?.latitude,
+        longitude: userLocation?.longitude,
+        address: address || undefined,
+      } as any);
 
-      alert('Desapego publicado com sucesso! 🎉');
+      await SecureStore.deleteItemAsync(DRAFT_KEY);
+      Alert.alert('', 'Desapego publicado com sucesso!');
       reset();
       setCurrentStep(0);
       progressWidth.value = withTiming(1 / TOTAL_STEPS);
       router.push('/(tabs)');
     } catch (err) {
       console.error('[CreateListing] onSubmit error:', err);
-      alert('Não foi possível publicar. Verifique sua conexão e tente novamente.');
+      Alert.alert('', 'Não foi possível publicar. Verifique sua conexão e tente novamente.');
     } finally {
       setUploadState('idle');
     }
@@ -286,20 +370,27 @@ export default function CreateListing() {
                 <View className="flex-row flex-wrap gap-3">
                   {/* Botão de adicionar foto */}
                   {selectedImages.length < 5 && (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={pickImage}
-                      accessibilityLabel="Adicionar foto"
-                      accessibilityRole="button"
-                      accessibilityHint="Abre a galeria para selecionar uma imagem"
-                      className="bg-white border-2 border-dashed border-[#FF692E]/40 rounded-2xl items-center justify-center "
-                      style={{ width: '50%', aspectRatio: 4 / 5 }}
-                    >
-                        <Camera color="#FF692E" size={22} />
-                      <Text className="text-[#FF692E] font-bold text-xs">
-                        Adicionar
-                      </Text>
-                    </TouchableOpacity>
+                    <View style={{ width: '30%', aspectRatio: 1 }}>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={handleAddImage}
+                        accessibilityLabel="Adicionar foto"
+                        accessibilityRole="button"
+                        style={{
+                          flex: 1,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: 'white',
+                          borderWidth: 2,
+                          borderStyle: 'dashed',
+                          borderColor: 'rgba(255,105,46,0.4)',
+                          borderRadius: 16,
+                        }}
+                      >
+                        <Camera color="#FF692E" size={22} style={{ marginBottom: 4 }} />
+                        <Text className="text-[#FF692E] font-bold text-xs">Adicionar</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
 
                   {/* Miniaturas das fotos */}

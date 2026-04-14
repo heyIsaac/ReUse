@@ -2,17 +2,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ReUse.Api.Models;
 
-[Table("profiles")]
-public class User
+[Table("categories")]
+public class Category
 {
     [Column("id")]
-    public Guid Id { get; set; }
+    public int Id { get; set; }
 
     [Column("name")]
-    public string? Name { get; set; }
-
-    [Column("avatar_url")]
-    public string? AvatarUrl { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

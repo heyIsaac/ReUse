@@ -2,8 +2,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ReUse.Api.Models;
 
-[Table("chat_messages")]
-public class ChatMessage
+[Table("ratings")]
+public class Rating
 {
     [Column("id")]
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -11,11 +11,17 @@ public class ChatMessage
     [Column("chat_room_id")]
     public Guid ChatRoomId { get; set; }
 
-    [Column("sender_id")]
-    public Guid SenderId { get; set; }
+    [Column("reviewer_id")]
+    public Guid ReviewerId { get; set; }
 
-    [Column("text")]
-    public string Text { get; set; } = string.Empty;
+    [Column("reviewed_id")]
+    public Guid ReviewedId { get; set; }
+
+    [Column("score")]
+    public int Score { get; set; }
+
+    [Column("comment")]
+    public string? Comment { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

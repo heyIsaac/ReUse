@@ -1,5 +1,6 @@
-import React from 'react';
-import { ScrollView, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { RefreshControl, ScrollView, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { CategorySelector } from '@/components/home/category-selector';
 import { HomeHeader } from '@/components/home/home-header';
@@ -9,33 +10,41 @@ import { SearchBar } from '@/components/home/search-bar';
 import { ScreenLayout } from '@/components/layout/screen-layout';
 
 export default function HomeScreen() {
-  return (
-    <ScreenLayout className="bg-[#FDF9F1] p-0" applyBottomInset={false}>
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
-      {/* stickyHeaderIndices={[1]} significa que o elemento de índice 1 (o bloco de filtros)
-        vai grudar no topo. O HomeHeader (índice 0) vai rolar normalmente e sumir.
-      */}
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ['listings'] });
+    await queryClient.invalidateQueries({ queryKey: ['unreadNotifications'] });
+    setRefreshing(false);
+  }, [queryClient]);
+
+  return (
+    <ScreenLayout className="bg-[#FDF9F1]" noPadding applyBottomInset={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexGrow: 1 }}
         stickyHeaderIndices={[1]}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF692E" />
+        }
       >
-
-        {/* ÍNDICE 0: Rola e vai embora */}
         <HomeHeader />
 
-        {/* ÍNDICE 1: O Bloco Sticky (Gruda no teto) */}
         <View className="bg-[#FDF9F1] pt-2 pb-2 z-10">
-          <SearchBar />
-          <CategorySelector />
+          <View className="px-6">
+            <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
+          </View>
+          <CategorySelector selected={selectedCategory} onSelect={setSelectedCategory} />
         </View>
 
-        {/* ÍNDICE 2: O Resto do Conteúdo (Rola por trás do bloco sticky) */}
-        <View>
+        <View className="px-6">
           <ImpactCard />
-          <RecommendationsList />
+          <RecommendationsList searchQuery={searchQuery} category={selectedCategory} />
         </View>
-
       </ScrollView>
     </ScreenLayout>
   );

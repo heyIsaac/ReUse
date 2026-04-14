@@ -7,20 +7,26 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<User> Users { get; set; }
-    public DbSet<OtpCode> OtpCodes { get; set; }
+    public DbSet<User> Profiles { get; set; }
     public DbSet<Listing> Listings { get; set; }
-
     public DbSet<ChatRoom> ChatRooms { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
+    public DbSet<Category> Categories { get; set; }
+    public DbSet<Favorite> Favorites { get; set; }
+    public DbSet<Rating> Ratings { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Regra de Negócio: Não podemos ter dois usuários com o mesmo e-mail
-        modelBuilder.Entity<User>()
-            .HasIndex(u => u.Email)
-            .IsUnique();
+        modelBuilder.Entity<User>().ToTable("profiles");
+        modelBuilder.Entity<Listing>().ToTable("listings");
+        modelBuilder.Entity<ChatRoom>().ToTable("chat_rooms");
+        modelBuilder.Entity<ChatMessage>().ToTable("chat_messages");
+        modelBuilder.Entity<Category>().ToTable("categories");
+        modelBuilder.Entity<Favorite>().ToTable("favorites");
+        modelBuilder.Entity<Rating>().ToTable("ratings");
+        modelBuilder.Entity<Notification>().ToTable("notifications");
     }
 }

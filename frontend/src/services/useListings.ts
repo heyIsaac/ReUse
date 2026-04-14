@@ -6,7 +6,7 @@ import { api } from './api';
 export interface ListingOwner {
   id: string;
   name: string | null;
-  profilePictureUrl: string | null;
+  avatarUrl: string | null;
 }
 
 export interface Listing {
@@ -25,7 +25,7 @@ export interface CreateListingData {
   category: string;
   condition: string;
   description: string;
-  images: string[]; // Cloudinary secure_url strings
+  images: string[];
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────

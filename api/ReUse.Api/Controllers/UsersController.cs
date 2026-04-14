@@ -3,13 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ReUse.Api.Data;
-using ReUse.Api.DTOs;
 
 namespace ReUse.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Apenas usuários autenticados com JWT válido podem acessar
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -19,53 +18,52 @@ public class UsersController : ControllerBase
         _context = context;
     }
 
+    private Guid? GetUserId()
+    {
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        return Guid.TryParse(sub, out var id) ? id : null;
+    }
+
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        // Pega o e-mail do token JWT injetado no HttpContext
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
+        var userId = GetUserId();
+        if (userId == null)
+            return Unauthorized(new { Message = "Token inválido." });
 
-        if (string.IsNullOrEmpty(email))
-            return Unauthorized(new { Message = "Token inválido ou sem e-mail." });
+        var profile = await _context.Profiles.FindAsync(userId.Value);
 
-        // Busca o usuário no banco de dados
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        if (profile == null)
+            return NotFound(new { Message = "Perfil não encontrado. Complete o cadastro." });
 
-        if (user == null)
-            return NotFound(new { Message = "Usuário não encontrado." });
-
-        // Retorna apenas os dados públicos/necessários para o Perfil (sem expor senhas ou dados sensíveis futuramente)
         return Ok(new
         {
-            Id = user.Id,
-            Name = user.Name,
-            Email = user.Email,
-            ProfilePictureUrl = user.ProfilePictureUrl,
-            AuthProvider = user.AuthProvider,
-            CreatedAt = user.CreatedAt
+            Id = profile.Id,
+            Name = profile.Name,
+            AvatarUrl = profile.AvatarUrl,
+            CreatedAt = profile.CreatedAt
         });
     }
 
     [HttpPut("me/avatar")]
     public async Task<IActionResult> UpdateAvatar([FromBody] UpdateAvatarRequest request)
     {
-        var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email");
-
-        if (string.IsNullOrEmpty(email))
-            return Unauthorized(new { Message = "Token inválido ou sem e-mail." });
+        var userId = GetUserId();
+        if (userId == null)
+            return Unauthorized(new { Message = "Token inválido." });
 
         if (string.IsNullOrEmpty(request.AvatarUrl))
             return BadRequest(new { Message = "A URL do avatar é obrigatória." });
 
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        var profile = await _context.Profiles.FindAsync(userId.Value);
 
-        if (user == null)
-            return NotFound(new { Message = "Usuário não encontrado." });
+        if (profile == null)
+            return NotFound(new { Message = "Perfil não encontrado." });
 
-        user.ProfilePictureUrl = request.AvatarUrl;
+        profile.AvatarUrl = request.AvatarUrl;
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Avatar atualizado com sucesso!", AvatarUrl = user.ProfilePictureUrl });
+        return Ok(new { Message = "Avatar atualizado!", AvatarUrl = profile.AvatarUrl });
     }
 }
 

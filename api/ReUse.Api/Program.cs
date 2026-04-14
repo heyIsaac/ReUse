@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ReUse.Api.Data;
-using ReUse.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using ReUse.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,16 +10,23 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-builder.Services.AddHttpClient<AuthService>();
 builder.Services.AddControllers();
 
 builder.Services.AddSignalR();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = Encoding.ASCII.GetBytes(jwtSettings["Secret"]!);
+var supabaseUrl = builder.Configuration["Supabase:Url"] ?? "";
+var jwksUrl = $"{supabaseUrl}/auth/v1/.well-known/jwks.json";
 
 builder.Services.AddAuthentication(options =>
     {
@@ -30,15 +35,13 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
+        options.Authority = $"{supabaseUrl}/auth/v1";
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateIssuer = false,
+            ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(secretKey)
         };
 
         options.Events = new JwtBearerEvents
@@ -47,7 +50,6 @@ builder.Services.AddAuthentication(options =>
             {
                 var accessToken = context.Request.Query["access_token"];
 
-                // Se a requisição for pro nosso Hub de Chat, lê o token da URL
                 var path = context.HttpContext.Request.Path;
                 if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chathub"))
                 {
@@ -66,30 +68,15 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.MapHub<ChatHub>("/chathub");
-
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<AppDbContext>();
-
-        context.Database.Migrate();
-        Console.WriteLine("Banco de dados atualizado com sucesso!");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Erro ao criar as tabelas no banco: {ex.Message}");
-    }
-}
 
 app.Run();
