@@ -18,7 +18,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22]
 
     steps:
       - name: 📥 Checkout repository
@@ -54,14 +54,14 @@ jobs:
           CI: true
 
       - name: 📊 Generate coverage badge
-        if: matrix.node-version == 18 && github.ref == 'refs/heads/main'
+        if: matrix.node-version == 20 && github.ref == 'refs/heads/main'
         uses: jaywcjlove/coverage-badges-cli@main
         with:
           source: frontend/coverage/coverage-summary.json
           output: frontend/coverage/badges.svg
 
       - name: 📈 Upload coverage reports
-        if: matrix.node-version == 18
+        if: matrix.node-version == 20
         uses: codecov/codecov-action@v4
         with:
           files: ./frontend/coverage/coverage-final.json
@@ -71,7 +71,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: 💾 Archive coverage artifacts
-        if: matrix.node-version == 18
+        if: matrix.node-version == 20
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
@@ -106,7 +106,7 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'yarn'
           cache-dependency-path: 'frontend/yarn.lock'
 
