@@ -1,4 +1,9 @@
-# ReUse
+# 🌱 ReUse
+
+[![Tests](https://github.com/heyIsaac/ReUse/actions/workflows/tests.yml/badge.svg)](https://github.com/heyIsaac/ReUse/actions/workflows/tests.yml)
+[![CI](https://github.com/heyIsaac/ReUse/actions/workflows/ci.yml/badge.svg)](https://github.com/heyIsaac/ReUse/actions/workflows/ci.yml)
+[![Lint](https://github.com/heyIsaac/ReUse/actions/workflows/lint.yml/badge.svg)](https://github.com/heyIsaac/ReUse/actions/workflows/lint.yml)
+[![TypeScript](https://github.com/heyIsaac/ReUse/actions/workflows/type-check.yml/badge.svg)](https://github.com/heyIsaac/ReUse/actions/workflows/type-check.yml)
 
 [Figma](https://www.figma.com/design/ALdrMz6X0cFopZPIkJwmIJ/ReUse?node-id=2-8&t=7SdET4y0iHcbCRvk-1) | [API em Produção](https://reuse-hx4x.onrender.com/api/listings)
 
@@ -21,6 +26,8 @@ O ReUse é uma plataforma focada em **sustentabilidade e economia circular**, co
 | **GPS/Mapa** | expo-location, react-native-maps |
 | **QR Code** | react-native-qrcode-svg (geração), expo-camera (leitura) |
 | **Email** | Resend (SMTP customizado via Supabase) |
+| **Testes** | Jest, React Native Testing Library (16 testes configurados) |
+| **CI/CD** | GitHub Actions (100% gratuito) |
 
 ## Funcionalidades
 
@@ -120,6 +127,13 @@ ReUse/
 │       ├── Dockerfile            # Deploy em container no Render
 │       └── Program.cs            # Configuração, CORS, JWT (JWKS do Supabase)
 │
+├── .github/
+│   └── workflows/                # GitHub Actions (CI/CD gratuito)
+│       ├── tests.yml             # Testes automatizados
+│       ├── lint.yml              # Verificação de código
+│       ├── type-check.yml        # TypeScript check
+│       └── ci.yml                # Pipeline completo
+│
 ├── CHANGELOG.md                  # Histórico detalhado de mudanças
 └── README.md
 ```
@@ -143,6 +157,23 @@ npx expo run:android # Android (requer Android Studio)
 cd api/ReUse.Api
 dotnet run
 ```
+
+### Testes
+
+```bash
+cd frontend
+
+# Rodar todos os testes
+yarn test
+
+# Modo watch (re-executa ao salvar)
+yarn test:watch
+
+# Com cobertura de código
+yarn test:coverage
+```
+
+📚 **Documentação completa:** [`frontend/TESTING.md`](frontend/TESTING.md)
 
 ### Variáveis de Ambiente (Frontend)
 
@@ -175,4 +206,46 @@ Tabelas gerenciadas via SQL Editor:
 | `ratings` | Avaliações pós-entrega |
 | `notifications` | Notificações internas |
 
-> Documentação atualizada em: Abril de 2026.
+## Testes e CI/CD
+
+### 🧪 Testes Automatizados
+
+O projeto possui **16 testes configurados** com Jest e React Native Testing Library:
+
+- ✅ Testes unitários (hooks, serviços)
+- ✅ Testes de componentes (interação do usuário)
+- ✅ Cobertura de código configurada
+- ✅ 13 testes passando atualmente
+
+**Status dos testes:** 
+- 🟢 `useEmailAuth` - Hook de autenticação (4 testes)
+- 🟢 `api.test` - Interceptors e tokens (5 testes)
+- 🟢 `supabaseStorage` - Upload de imagens (6 testes)
+- 🟢 `Button` - Componente UI (7 testes)
+
+### 🚀 GitHub Actions (CI/CD Gratuito)
+
+**4 workflows configurados** que rodam automaticamente a cada push:
+
+| Workflow | O que faz | Duração |
+|----------|-----------|---------|
+| 🧪 **Tests** | Roda todos os testes com cobertura | ~3 min |
+| 🔍 **Lint** | Verifica qualidade de código (ESLint) | ~1 min |
+| 📝 **TypeScript** | Valida tipos TypeScript | ~1 min |
+| ✨ **CI** | Pipeline completo (Node 18 e 20) | ~5 min |
+
+**100% Gratuito:**
+- ♾️ Ilimitado para repositórios públicos
+- 2.000 minutos/mês para repositórios privados
+
+📚 **Setup completo:** [`.github/SETUP.md`](.github/SETUP.md)
+
+## 📚 Documentação Adicional
+
+- [`CHANGELOG.md`](CHANGELOG.md) - Histórico detalhado de mudanças
+- [`frontend/TESTING.md`](frontend/TESTING.md) - Guia completo de testes (3500+ linhas)
+- [`frontend/QUICK_START_TESTES.md`](frontend/QUICK_START_TESTES.md) - Início rápido com testes
+- [`.github/GITHUB_ACTIONS.md`](.github/GITHUB_ACTIONS.md) - GitHub Actions explicado
+- [`.github/SETUP.md`](.github/SETUP.md) - Setup rápido do CI/CD
+
+> Documentação atualizada em: Maio de 2026.

@@ -1,0 +1,49 @@
+name: 📝 TypeScript
+
+on:
+  push:
+    branches: [ main, marco, develop ]
+    paths:
+      - 'frontend/**/*.{ts,tsx}'
+      - 'frontend/tsconfig.json'
+      - '.github/workflows/type-check.yml'
+  pull_request:
+    branches: [ main, marco, develop ]
+    paths:
+      - 'frontend/**/*.{ts,tsx}'
+      - 'frontend/tsconfig.json'
+
+jobs:
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: 'frontend/yarn.lock'
+
+      - name: 🔧 Install dependencies
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: 📝 Run TypeScript
+        run: npx tsc --noEmit
+        continue-on-error: false
+
+      - name: ✅ TypeScript Results
+        if: always()
+        run: |
+          echo "## 📝 TypeScript Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Type checking completed!" >> $GITHUB_STEP_SUMMARY
