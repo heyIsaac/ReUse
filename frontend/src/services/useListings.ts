@@ -40,7 +40,8 @@ export function useGetListings(page = 1) {
       });
       return data;
     },
-    staleTime: 30_000, // consider data fresh for 30 s
+    staleTime: 90_000,
+    gcTime: 1000 * 60 * 15,
   });
 }
 

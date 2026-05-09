@@ -31,6 +31,7 @@ import { Text } from '@/components/ui/text';
 import { useGetCategories } from '@/src/services/useCategories';
 import { useCreateListing } from '@/src/services/useListings';
 import { uploadImages } from '@/src/services/supabaseStorage';
+import { useViaCep } from '@/src/services/useViaCep';
 
 // ─────────────────────────────────────────────
 // 1. SCHEMA
@@ -96,7 +97,11 @@ export default function CreateListing() {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'saving'>('idle');
+  const [cep, setCep] = useState('');
   const isSubmitting = uploadState !== 'idle';
+  
+  // Buscar endereço por CEP automaticamente
+  const { data: addressData, isLoading: isLoadingCep, error: cepError } = useViaCep(cep);
 
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [address, setAddress] = useState('');
@@ -616,7 +621,7 @@ export default function CreateListing() {
                 </View>
 
                 {/* Descrição */}
-                <View>
+                <View className="mb-8">
                   <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">
                     Mais detalhes
                   </Text>
@@ -651,6 +656,63 @@ export default function CreateListing() {
                   ) : (
                     <Text className="text-[#B0978E] text-xs mt-2">
                       Quanto mais detalhes, menos perguntas você recebe.
+                    </Text>
+                  )}
+                </View>
+
+                {/* CEP e Endereço (Opcional) */}
+                <View className="mt-8">
+                  <View className="flex-row items-center mb-3">
+                    <MapPin size={16} color="#642714" strokeWidth={2.5} />
+                    <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest ml-2">
+                      CEP (Opcional)
+                    </Text>
+                  </View>
+                  
+                  <Input
+                    placeholder="00000-000"
+                    value={cep}
+                    onChangeText={(text) => {
+                      const formatted = text.replace(/\D/g, '').slice(0, 8);
+                      setCep(formatted);
+                    }}
+                    keyboardType="numeric"
+                    maxLength={9}
+                    accessibilityLabel="CEP do local de retirada"
+                    accessibilityHint="Digite o CEP para preencher o endereço automaticamente"
+                    className={`bg-white h-14 pl-5 rounded-2xl border-2 shadow-sm text-[#3D2214] ${
+                      cepError ? 'border-red-400' : 'border-transparent focus:border-[#FF692E]'
+                    }`}
+                  />
+                  
+                  {isLoadingCep && (
+                    <View className="mt-3 p-3 bg-blue-50 rounded-2xl">
+                      <Text className="text-blue-700 text-xs">🔍 Buscando endereço...</Text>
+                    </View>
+                  )}
+                  
+                  {addressData && !cepError && (
+                    <View className="mt-3 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                      <Text className="text-emerald-800 font-bold text-sm mb-2">✓ Endereço encontrado:</Text>
+                      <Text className="text-emerald-700 text-sm">
+                        {addressData.logradouro}
+                        {addressData.complemento && `, ${addressData.complemento}`}
+                      </Text>
+                      <Text className="text-emerald-700 text-sm">
+                        {addressData.bairro} - {addressData.localidade}/{addressData.uf}
+                      </Text>
+                    </View>
+                  )}
+                  
+                  {cepError && cep.length === 8 && (
+                    <Text className="text-red-500 text-xs mt-2">
+                      CEP não encontrado. Verifique e tente novamente.
+                    </Text>
+                  )}
+                  
+                  {!cep && (
+                    <Text className="text-[#B0978E] text-xs mt-2">
+                      O CEP ajuda a mostrar a localização aproximada do item.
                     </Text>
                   )}
                 </View>

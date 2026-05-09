@@ -35,6 +35,8 @@ export default function ListingConversationsScreen() {
       const { data } = await api.get<Conversation[]>(`/chat/listing/${listingId}/conversations`);
       return data;
     },
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   return (

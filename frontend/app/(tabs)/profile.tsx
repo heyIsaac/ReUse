@@ -20,6 +20,8 @@ import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useGetListings } from '@/src/services/useListings';
 import { api } from '@/src/services/api';
 import { useQuery } from '@tanstack/react-query';
+import { useTotalCarbonImpact, getCarbonMessage, getImpactLevel } from '@/src/services/useCarbon';
+import { useMultiCurrencyConversion, formatCurrency } from '@/src/services/useExchange';
 
 export default function ProfileScreen() {
   const router = useExpoRouter();
@@ -35,10 +37,27 @@ export default function ProfileScreen() {
       return data as { average: number; count: number };
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 3,
+    gcTime: 1000 * 60 * 20,
   });
 
   const myListingsCount = listings?.filter(l => l.owner?.id === user?.id).length ?? 0;
-  const impactKg = (myListingsCount * 2.5).toFixed(1).replace('.0', '');
+  
+  // Calcular impacto de carbono real usando categorias dos listings
+  const myListings = listings?.filter(l => l.owner?.id === user?.id) ?? [];
+  const donations = myListings.map(listing => ({
+    category: listing.category?.name || 'default',
+    quantity: 1,
+  }));
+  
+  const { data: carbonData } = useTotalCarbonImpact(donations);
+  const impactKg = carbonData?.co2_kg.toString() ?? (myListingsCount * 2.5).toFixed(1).replace('.0', '');
+  const impactLevel = carbonData ? getImpactLevel(carbonData.co2_kg) : null;
+  
+  // Calcular economia em outras moedas (assumindo R$ 100 por item)
+  const estimatedSavingsBRL = myListingsCount * 100;
+  const { data: currencyConversions } = useMultiCurrencyConversion(estimatedSavingsBRL, ['USD', 'EUR']);
+  
   const ratingDisplay = ratingData && ratingData.count > 0 ? ratingData.average.toString() : '-';
 
   const handleLogout = async () => {
@@ -81,13 +100,87 @@ export default function ProfileScreen() {
         </View>
 
         {/* ESTATÍSTICAS */}
-        <View className="flex-row justify-between bg-white rounded-3xl py-5 mt-2 mb-8">
+        <View className="flex-row justify-between bg-white rounded-3xl py-5 mt-2 mb-4">
           <StatItem icon={Package} label="Desapegos" value={myListingsCount.toString()} color="#FF692E" />
           <View className="w-[1px] h-full bg-zinc-100" />
-          <StatItem icon={Leaf} label="Impacto" value={`${impactKg}kg`} color="#84DCD9" />
+          <StatItem 
+            icon={Leaf} 
+            label="Impacto CO₂" 
+            value={`${impactKg}kg`} 
+            color="#84DCD9"
+            badge={impactLevel?.emoji}
+          />
           <View className="w-[1px] h-full bg-zinc-100" />
           <StatItem icon={Star} label="Avaliação" value={ratingDisplay} color="#F8A720" />
         </View>
+
+        {/* CARD DE IMPACTO AMBIENTAL */}
+        {carbonData && (
+          <View className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-5 mb-4 border border-emerald-100">
+            <View className="flex-row items-center mb-3">
+              <Leaf size={24} color="#10b981" strokeWidth={2.5} />
+              <Text className="text-emerald-800 font-bold text-lg ml-2">Seu Impacto Sustentável</Text>
+            </View>
+            
+            <Text className="text-emerald-700 text-base mb-3">
+              {getCarbonMessage(carbonData)}
+            </Text>
+            
+            <View className="flex-row justify-between mt-2">
+              <View>
+                <Text className="text-emerald-600 text-xs font-medium">Árvores equivalentes</Text>
+                <Text className="text-emerald-800 text-xl font-black">{carbonData.trees_equivalent} 🌳</Text>
+              </View>
+              <View>
+                <Text className="text-emerald-600 text-xs font-medium">KM de carro evitados</Text>
+                <Text className="text-emerald-800 text-xl font-black">{carbonData.car_km_equivalent} 🚗</Text>
+              </View>
+            </View>
+            
+            {impactLevel && (
+              <View className="mt-4 p-3 bg-white/50 rounded-2xl">
+                <Text className="text-emerald-700 text-center font-bold">
+                  {impactLevel.emoji} {impactLevel.message}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* CARD DE CONVERSÃO DE MOEDAS */}
+        {currencyConversions && estimatedSavingsBRL > 0 && (
+          <View className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-5 mb-8 border border-amber-100">
+            <View className="flex-row items-center mb-3">
+              <Text className="text-3xl mr-2">💰</Text>
+              <Text className="text-amber-800 font-bold text-lg">Economia Estimada</Text>
+            </View>
+            
+            <Text className="text-amber-700 text-sm mb-4">
+              Se seus itens fossem comprados novos, você economizou aproximadamente:
+            </Text>
+            
+            <View className="space-y-2">
+              <View className="flex-row justify-between py-2 border-b border-amber-200">
+                <Text className="text-amber-700 font-medium">🇧🇷 Brasil</Text>
+                <Text className="text-amber-900 font-black text-lg">R$ {estimatedSavingsBRL.toLocaleString('pt-BR')}</Text>
+              </View>
+              
+              {currencyConversions.USD && (
+                <View className="flex-row justify-between py-2 border-b border-amber-200">
+                  <Text className="text-amber-700 font-medium">🇺🇸 EUA</Text>
+                  <Text className="text-amber-900 font-black text-lg">{formatCurrency(currencyConversions.USD, 'USD')}</Text>
+                </View>
+              )}
+              
+              {currencyConversions.EUR && (
+                <View className="flex-row justify-between py-2">
+                  <Text className="text-amber-700 font-medium">🇪🇺 Europa</Text>
+                  <Text className="text-amber-900 font-black text-lg">{formatCurrency(currencyConversions.EUR, 'EUR')}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* MENU DE OPÇÕES */}
         <View>
@@ -122,11 +215,16 @@ export default function ProfileScreen() {
 
 // === SUBCOMPONENTES ===
 
-function StatItem({ icon: Icon, label, value, color }: any) {
+function StatItem({ icon: Icon, label, value, color, badge }: any) {
   return (
     <View className="items-center flex-1">
-      <View className="mb-2" style={{ backgroundColor: `${color}15`, padding: 8, borderRadius: 12 }}>
+      <View className="mb-2 relative" style={{ backgroundColor: `${color}15`, padding: 8, borderRadius: 12 }}>
         <Icon size={20} color={color} strokeWidth={2.5} />
+        {badge && (
+          <View className="absolute -top-1 -right-1">
+            <Text className="text-lg">{badge}</Text>
+          </View>
+        )}
       </View>
       <Text className="text-[#642714] font-black text-lg">{value}</Text>
       <Text className="text-[#8C6D62] text-xs font-medium mt-0.5">{label}</Text>

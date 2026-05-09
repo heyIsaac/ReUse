@@ -7,7 +7,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Adicio
 import "react-native-reanimated";
 import "../global.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      gcTime: 1000 * 60 * 30,
+      retry: 1,
+    },
+  },
+});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

@@ -2,6 +2,7 @@ import { ScreenLayout } from '@/components/layout/screen-layout';
 import { Text } from '@/components/ui/text';
 import { api } from '@/src/services/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -15,6 +16,7 @@ import {
 export default function RateScreen() {
   const { chatRoomId, userName } = useLocalSearchParams<{ chatRoomId: string; userName: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const [score, setScore] = useState(0);
   const [comment, setComment] = useState('');
@@ -29,6 +31,7 @@ export default function RateScreen() {
         score,
         comment: comment.trim() || null,
       });
+      await queryClient.invalidateQueries({ queryKey: ['myRating'] });
       Alert.alert('', 'Avaliação enviada!');
       router.back();
     } catch (err: any) {

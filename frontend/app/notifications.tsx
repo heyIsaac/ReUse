@@ -53,6 +53,8 @@ export default function NotificationsScreen() {
       const { data } = await api.get<NotificationItem[]>('/notifications');
       return data;
     },
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   const unreadCount = notifications?.filter(n => !n.read).length ?? 0;
