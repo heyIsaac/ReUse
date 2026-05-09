@@ -24,15 +24,16 @@ const createTestQueryClient = () =>
     },
   });
 
-function wrapper({ children }: { children: React.ReactNode }) {
+const createWrapper = () => {
   const queryClient = createTestQueryClient();
-  return React.createElement(QueryClientProvider, { client: queryClient }, children);
-}
+  return ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
+};
 
 describe('useCarbonImpact', () => {
   it('deve calcular CO₂ para categoria Eletrônicos', async () => {
     const { result } = renderHook(() => useCarbonImpact('Eletrônicos', 1), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -46,7 +47,7 @@ describe('useCarbonImpact', () => {
 
   it('deve calcular CO₂ para categoria Roupas', async () => {
     const { result } = renderHook(() => useCarbonImpact('Roupas', 5), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -57,7 +58,7 @@ describe('useCarbonImpact', () => {
 
   it('deve usar fator padrão para categoria desconhecida', async () => {
     const { result } = renderHook(() => useCarbonImpact('CategoriaInválida', 1), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -66,7 +67,7 @@ describe('useCarbonImpact', () => {
   });
 
   it('não deve executar se categoria for null', () => {
-    const { result } = renderHook(() => useCarbonImpact(null, 1), { wrapper });
+    const { result } = renderHook(() => useCarbonImpact(null, 1), { wrapper: createWrapper() });
 
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
@@ -82,7 +83,7 @@ describe('useTotalCarbonImpact', () => {
     ];
 
     const { result } = renderHook(() => useTotalCarbonImpact(donations), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -92,7 +93,7 @@ describe('useTotalCarbonImpact', () => {
   });
 
   it('não deve executar se array de doações estiver vazio', () => {
-    const { result } = renderHook(() => useTotalCarbonImpact([]), { wrapper });
+    const { result } = renderHook(() => useTotalCarbonImpact([]), { wrapper: createWrapper() });
 
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');

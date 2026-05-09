@@ -22,10 +22,11 @@ const createTestQueryClient = () =>
     },
   });
 
-function wrapper({ children }: { children: React.ReactNode }) {
+const createWrapper = () => {
   const queryClient = createTestQueryClient();
-  return React.createElement(QueryClientProvider, { client: queryClient }, children);
-}
+  return ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
+};
 
 describe('useViaCep', () => {
   beforeEach(() => {
@@ -51,7 +52,7 @@ describe('useViaCep', () => {
       json: async () => mockAddress,
     });
 
-    const { result } = renderHook(() => useViaCep('01310100'), { wrapper });
+    const { result } = renderHook(() => useViaCep('01310100'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -69,14 +70,14 @@ describe('useViaCep', () => {
       json: async () => mockError,
     });
 
-    const { result } = renderHook(() => useViaCep('00000000'), { wrapper });
+    const { result } = renderHook(() => useViaCep('00000000'), { wrapper: createWrapper() });
 
     // O hook recebe { erro: true } e lança um erro
     await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 3000 });
   });
 
   it('não deve fazer requisição com CEP inválido (menos de 8 dígitos)', () => {
-    const { result } = renderHook(() => useViaCep('12345'), { wrapper });
+    const { result } = renderHook(() => useViaCep('12345'), { wrapper: createWrapper() });
 
     expect(result.current.isPending).toBe(true);
     expect(result.current.fetchStatus).toBe('idle');
@@ -97,7 +98,7 @@ describe('useViaCep', () => {
       json: async () => mockAddress,
     });
 
-    renderHook(() => useViaCep('01310-100'), { wrapper });
+    renderHook(() => useViaCep('01310-100'), { wrapper: createWrapper() });
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -107,7 +108,7 @@ describe('useViaCep', () => {
   });
 
   it('deve cachear resultado por 30 minutos (staleTime)', () => {
-    const { result } = renderHook(() => useViaCep('01310100'), { wrapper });
+    const { result } = renderHook(() => useViaCep('01310100'), { wrapper: createWrapper() });
 
     // Verifica se o hook foi configurado com staleTime correto
     expect(result.current).toBeDefined();

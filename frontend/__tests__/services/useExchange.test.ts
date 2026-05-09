@@ -28,10 +28,12 @@ const createTestQueryClient = () =>
     },
   });
 
-function wrapper({ children }: { children: React.ReactNode }) {
+/** Um QueryClient por renderHook; mesma instância entre re-renders (evita resetar a query). */
+const createWrapper = () => {
   const queryClient = createTestQueryClient();
-  return React.createElement(QueryClientProvider, { client: queryClient }, children);
-}
+  return ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
+};
 
 describe('useAllExchangeRates', () => {
   beforeEach(() => {
@@ -56,7 +58,9 @@ describe('useAllExchangeRates', () => {
       json: async () => mockResponse,
     });
 
-    const { result } = renderHook(() => useAllExchangeRates('BRL'), { wrapper });
+    const { result } = renderHook(() => useAllExchangeRates('BRL'), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -78,7 +82,7 @@ describe('useAllExchangeRates', () => {
       json: async () => mockResponse,
     });
 
-    renderHook(() => useAllExchangeRates(), { wrapper });
+    renderHook(() => useAllExchangeRates(), { wrapper: createWrapper() });
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -105,7 +109,7 @@ describe('useExchangeRate', () => {
     });
 
     const { result } = renderHook(() => useExchangeRate('BRL', 'USD'), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -128,7 +132,7 @@ describe('useExchangeRate', () => {
     });
 
     const { result } = renderHook(() => useExchangeRate('BRL', 'INVALID'), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 3000 });
@@ -171,7 +175,7 @@ describe('useConvertCurrency', () => {
     });
 
     const { result } = renderHook(() => useConvertCurrency(1500, 'BRL', 'USD'), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -188,7 +192,7 @@ describe('useConvertCurrency', () => {
 
   it('não deve fazer requisição se amount for 0', () => {
     const { result } = renderHook(() => useConvertCurrency(0, 'BRL', 'USD'), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     expect(result.current.isPending).toBe(true);
@@ -215,7 +219,7 @@ describe('useMultiCurrencyConversion', () => {
 
     const { result } = renderHook(
       () => useMultiCurrencyConversion(1500, ['USD', 'EUR', 'GBP']),
-      { wrapper }
+      { wrapper: createWrapper() }
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -243,7 +247,7 @@ describe('useMultiCurrencyConversion', () => {
     });
 
     const { result } = renderHook(() => useMultiCurrencyConversion(1000), {
-      wrapper,
+      wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));

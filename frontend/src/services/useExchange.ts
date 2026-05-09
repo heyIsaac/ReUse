@@ -55,7 +55,6 @@ export function useAllExchangeRates(baseCurrency: string = 'BRL') {
     },
     staleTime: 1000 * 60 * 60 * 24, // 24h (taxas atualizam 1x/dia)
     gcTime: 1000 * 60 * 60 * 48, // 48h
-    retry: 2,
   });
 }
 
@@ -92,7 +91,6 @@ export function useExchangeRate(from: string, to: string) {
     enabled: !!from && !!to,
     staleTime: 1000 * 60 * 60 * 24, // 24h
     gcTime: 1000 * 60 * 60 * 48, // 48h
-    retry: 2,
   });
 }
 
@@ -143,7 +141,6 @@ export function useConvertCurrency(
     enabled: amount > 0 && !!from && !!to,
     staleTime: 1000 * 60 * 60 * 24, // 24h
     gcTime: 1000 * 60 * 60 * 48, // 48h
-    retry: 2,
   });
 }
 
@@ -187,7 +184,6 @@ export function useMultiCurrencyConversion(
     enabled: amount > 0 && targetCurrencies.length > 0,
     staleTime: 1000 * 60 * 60 * 24, // 24h
     gcTime: 1000 * 60 * 60 * 48, // 48h
-    retry: 2,
   });
 }
 
