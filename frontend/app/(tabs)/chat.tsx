@@ -60,6 +60,8 @@ function MyListingsTab() {
       const { data } = await api.get<MyListingChat[]>('/chat/my-listings');
       return data;
     },
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   if (isLoading) return <View className="flex-1 items-center justify-center"><ActivityIndicator color="#FF692E" /></View>;
@@ -123,6 +125,8 @@ function MyInterestsTab() {
       const { data } = await api.get<MyInterest[]>('/chat/my-interests');
       return data;
     },
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   if (isLoading) return <View className="flex-1 items-center justify-center"><ActivityIndicator color="#FF692E" /></View>;

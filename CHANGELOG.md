@@ -1,5 +1,14 @@
 # Changelog — Branch `marco`
 
+## Maio 2026 — integrações e ajustes recentes
+
+- Integração com **ViaCEP** no criar anúncio (CEP opcional, último passo do fluxo).
+- No **perfil**: conversão estimada de “economia” em real/dólar/euro (API pública de câmbio) e bloco de impacto em CO₂ com base nas categorias dos anúncios (cálculo local, sem API paga).
+- **Cache** nas queries do TanStack: tempos de `staleTime` maiores no perfil, favoritos e feed; chat e notificações continuam sem cache agressivo.
+- Scripts `yarn ios:prod` / `start:prod` com `.env.production` (via `dotenv-cli`) para build local alinhado às variáveis de produção.
+- Testes novos para os hooks de CEP, câmbio e carbono.
+- Após enviar **avaliação**, o perfil invalida a query da média para atualizar na hora.
+
 ## Resumo
 
 19 commits abrangendo infraestrutura, backend, frontend e UX/UI. Migração completa para Supabase (Auth + Storage + Database), deploy em produção no Render, e implementação de funcionalidades nativas como câmera, GPS, QR Code e armazenamento seguro.
