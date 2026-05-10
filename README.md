@@ -3,36 +3,59 @@
 [![Tests](https://github.com/heyIsaac/ReUse/actions/workflows/tests.yml/badge.svg)](https://github.com/heyIsaac/ReUse/actions/workflows/tests.yml)
 [![CI](https://github.com/heyIsaac/ReUse/actions/workflows/ci.yml/badge.svg)](https://github.com/heyIsaac/ReUse/actions/workflows/ci.yml)
 
-[Figma](https://www.figma.com/design/ALdrMz6X0cFopZPIkJwmIJ/ReUse?node-id=2-8&t=7SdET4y0iHcbCRvk-1) · [API em produção](https://reuse-hx4x.onrender.com/api/listings)
+**ReUse** é um aplicativo de **economia circular** pensado para dar nova vida a itens que você não usa mais: publicar desapegos, descobrir o que precisa perto de você e combinar entrega de forma simples. Este repositório é **público** e faz parte de um **projeto acadêmico** com ênfase em consumo de serviços na nuvem, autenticação segura e boas práticas de desenvolvimento.
 
-App de economia circular: publicar desapegos, buscar por categoria, conversar em tempo real e fechar entrega com QR Code. Trabalho acadêmico com foco em consumo de APIs, autenticação e cache local.
+---
 
-## Stack (resumo)
+## O que você encontra no app
 
-- **Mobile:** Expo 54, React Native, TypeScript, NativeWind
-- **Dados no app:** TanStack Query, React Hook Form, Zod
-- **Auth e arquivos:** Supabase (login por e-mail com código, Google, Facebook; fotos no Storage)
-- **Backend:** .NET 8, EF Core, Postgres (Supabase), SignalR para chat
-- **Deploy da API:** Render (Docker)
+- **Início** — Busca, categorias e um cartão de **impacto estimado** (quanto de CO₂ deixou de ser emitido ao reutilizar em vez de comprar novo, com base nas categorias dos seus anúncios).
+- **Mapa** — Visualizar anúncios no mapa.
+- **Publicar desapego** — Formulário com validação; opcionalmente **CEP** com preenchimento automático do endereço (serviço público brasileiro).
+- **Favoritos e meus anúncios** — Organizar o que interessa e o que você publicou.
+- **Chat em tempo real** — Conversa ligada aos anúncios, com histórico na nuvem.
+- **QR Code** — Apoio ao combinado de entrega na prática.
+- **Avaliações e notificações** — Após a troca, é possível avaliar; o app também mostra avisos relevantes.
+- **Perfil** — Resumo de desapegos e avaliação; **estimativa de impacto** (CO₂, equivalências em árvores e quilômetros de carro, com explicações em texto); **referência em dinheiro** em real e conversão aproximada para outras moedas (somente referência, não é “preço de mercado” do item).
 
-## O que o app consome
+Tudo isso é apresentado de forma direta na interface; os números de impacto e câmbio são **estimativas** para dar contexto, não certificação ambiental ou financeira.
 
-- **API própria (Render):** anúncios, favoritos, categorias, chat, avaliações, notificações.
-- **Supabase:** quem está logado e upload de imagens.
-- **APIs públicas sem chave:** ViaCEP no fluxo de criar anúncio (CEP opcional); câmbio (perfil); estimativa de CO₂ no perfil é cálculo local com fatores por categoria (não é serviço pago).
+---
 
-Autenticação: JWT do Supabase nas chamadas à API. Cache: TanStack Query com tempos maiores no feed e perfil; chat e notificações continuam mais “frescos” de propósito.
+## Por trás dos panos (sem mergulhar em código)
 
-## Rodar o frontend
+- Uma **API própria** (hospedada na nuvem) guarda anúncios, favoritos, categorias, chat, avaliações e notificações.
+- O **login** e o **armazenamento de fotos** usam um provedor especializado (Supabase), com sessão persistente no celular.
+- Alguns recursos usam **serviços públicos gratuitos**: busca de endereço por CEP (ViaCEP) e taxas de câmbio para mostrar valores aproximados em dólar e euro. A pegada de carbono no app é calculada **no próprio aplicativo** com fatores médios por tipo de item — não depende de um serviço pago externo.
+- O repositório inclui **testes automatizados** no frontend e **pipelines** que rodam testes, lint e checagens ao enviar código — isso ajuda a manter o projeto estável enquanto evolui.
+
+Se quiser o detalhe técnico (endpoints, cache, decisões de arquitetura), vale olhar também o `CHANGELOG.md` e o `TRABALHO_APIS.md`.
+
+---
+
+## Links úteis
+
+- [Protótipo no Figma](https://www.figma.com/design/ALdrMz6X0cFopZPIkJwmIJ/ReUse?node-id=2-8&t=7SdET4y0iHcbCRvk-1)
+- [API pública de listagem (exemplo)](https://reuse-hx4x.onrender.com/api/listings) — ambiente de demonstração; uso sujeito à disponibilidade do servidor.
+
+---
+
+## Como rodar no seu computador
+
+### Aplicativo (Expo / React Native)
 
 ```bash
 cd frontend
 cp .env.example .env
-# Preencher EXPO_PUBLIC_API_URL, Supabase e Google conforme o exemplo
+```
+
+Preencha no `.env` as variáveis indicadas no exemplo (URL da API, projeto Supabase e, se for usar, Google Sign-In). Depois:
+
+```bash
 yarn install
 ```
 
-O projeto usa módulos nativos (Facebook, mapas, Google Sign-In). **Expo Go costuma quebrar**; use build de desenvolvimento:
+O projeto usa recursos nativos; em muitos casos o **Expo Go sozinho não é suficiente**. Prefira um build de desenvolvimento:
 
 ```bash
 yarn ios
@@ -40,34 +63,46 @@ yarn ios
 yarn android
 ```
 
-Para testar com as mesmas variáveis que você usa em produção no build local:
-
-```bash
-cp .env.example .env.production
-# preencher .env.production (arquivo não vai para o git)
-yarn ios:prod
-```
-
-## Rodar a API
+### API (.NET)
 
 ```bash
 cd api/ReUse.Api
 dotnet run
 ```
 
-Variáveis da API no Render: connection string do Postgres e URL do Supabase (JWKS para validar o token).
+A API em produção usa banco Postgres e validação de token conforme a configuração do ambiente.
 
-## Testes (frontend)
+---
+
+## Testes
 
 ```bash
 cd frontend
 yarn test
 ```
 
-## Estrutura rápida
+Com cobertura (gera também o resumo usado no CI):
 
-- `frontend/` — app Expo (pastas `app/`, `components/`, `src/`)
-- `api/ReUse.Api/` — Web API .NET
-- `.github/workflows/` — CI (testes, lint, TypeScript)
+```bash
+yarn test:coverage
+```
 
-Detalhes de histórico e decisões técnicas mais longas estão no `CHANGELOG.md`.
+---
+
+## Estrutura do repositório
+
+| Pasta | Conteúdo |
+|--------|----------|
+| `frontend/` | App Expo (telas em `app/`, componentes, serviços) |
+| `api/ReUse.Api/` | Web API .NET |
+| `.github/workflows/` | Automação de qualidade (testes, lint, TypeScript) |
+
+---
+
+## Licença
+
+Este projeto está sob a licença **MIT** — veja o arquivo [`LICENSE`](./LICENSE).
+
+---
+
+*ReUse — menos descarte, mais reutilização.*

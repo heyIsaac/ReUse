@@ -7,6 +7,8 @@ module.exports = {
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@supabase/.*|@gorhom/.*|@rn-primitives/.*)'
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  // json-summary → coverage/coverage-summary.json (CI: badge e resumos no GitHub Actions)
+  coverageReporters: ['text', 'lcov', 'json', 'json-summary'],
   collectCoverageFrom: [
     '**/*.{ts,tsx}',
     '!**/coverage/**',
