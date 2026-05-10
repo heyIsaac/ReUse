@@ -21,6 +21,9 @@ export function useEmailAuth(
 
     setIsLoading(true);
     try {
+      // Encerra sessão anterior (ex.: Google) para não misturar contas com o OTP
+      await supabase.auth.signOut();
+
       const { error } = await supabase.auth.signInWithOtp({ email });
 
       if (error) {

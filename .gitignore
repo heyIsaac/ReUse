@@ -1,0 +1,19 @@
+# Entrega da disciplina (local apenas — não subir)
+ENTREGA_PROJETO.md
+ENTREGA_PROJETO.html
+
+# Documentação de apoio (fica local; o repositório mantém só README principal + changelog)
+TRABALHO_APIS.md
+INTEGRACOES_APIS.md
+RESUMO_APIS_GRATUITAS.md
+STATUS_FINAL_APIS.md
+
+.github/BADGES.md
+.github/GITHUB_ACTIONS.md
+.github/RESUMO.md
+.github/SETUP.md
+
+frontend/DEBUG_GUIDE.md
+frontend/TESTING.md
+frontend/QUICK_START_TESTES.md
+frontend/README_TESTES.md

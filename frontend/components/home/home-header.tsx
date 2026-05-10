@@ -17,6 +17,8 @@ export function HomeHeader() {
       const { data } = await api.get<{ count: number }>('/notifications/unread-count');
       return data.count;
     },
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
     refetchInterval: 30000,
   });
 

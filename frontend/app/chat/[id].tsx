@@ -65,6 +65,8 @@ export default function ChatRoom() {
       const { data } = await api.get<RoomDetails>(`/chat/${chatRoomId}`);
       return data;
     },
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   const { data: historyMessages, isLoading: isLoadingHistory } = useQuery({
@@ -73,6 +75,8 @@ export default function ChatRoom() {
       const response = await api.get<ChatMessage[]>(`/chat/${chatRoomId}/messages`);
       return response.data;
     },
+    staleTime: 0,
+    gcTime: 1000 * 60 * 5,
   });
 
   const allMessages = [...(historyMessages || []), ...liveMessages];

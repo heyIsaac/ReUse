@@ -90,7 +90,7 @@ export default function LoginScreen() {
           style={{ paddingBottom: Math.max(insets.bottom + 16, 32) }}
         >
           <Text variant="h1" className="text-left mb-8 text-zinc-900">
-            Login
+            Entrar
           </Text>
 
           <View className="flex-row gap-4 w-full">
@@ -110,7 +110,7 @@ export default function LoginScreen() {
             />
           </View>
 
-          <DividerWithText text="or" />
+          <DividerWithText text="ou" />
 
           <EmailInputField
             value={email}
@@ -133,7 +133,7 @@ export default function LoginScreen() {
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-lg font-bold text-white">Enter</Text>
+              <Text className="text-lg font-bold text-white">Continuar</Text>
             )}
           </Button>
         </View>

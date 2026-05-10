@@ -9,7 +9,8 @@ export function useGetFavoriteIds() {
       const { data } = await api.get<number[]>('/favorites/ids');
       return data;
     },
-    staleTime: 0,
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 20,
   });
 }
 
@@ -20,6 +21,8 @@ export function useGetFavorites() {
       const { data } = await api.get<Listing[]>('/favorites');
       return data;
     },
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 20,
   });
 }
 

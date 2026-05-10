@@ -3,10 +3,11 @@ import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { useRouter as useExpoRouter } from 'expo-router';
-import { Camera, ChevronLeft, ImageIcon, MapPin, X } from 'lucide-react-native';
+import { Camera, CheckCircle2, ChevronLeft, FileText, MapPin, Package, Search, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -31,6 +32,7 @@ import { Text } from '@/components/ui/text';
 import { useGetCategories } from '@/src/services/useCategories';
 import { useCreateListing } from '@/src/services/useListings';
 import { uploadImages } from '@/src/services/supabaseStorage';
+import { useViaCep } from '@/src/services/useViaCep';
 
 // ─────────────────────────────────────────────
 // 1. SCHEMA
@@ -96,7 +98,11 @@ export default function CreateListing() {
   const [currentStep, setCurrentStep] = useState(0);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'saving'>('idle');
+  const [cep, setCep] = useState('');
   const isSubmitting = uploadState !== 'idle';
+  
+  // Buscar endereço por CEP automaticamente
+  const { data: addressData, isLoading: isLoadingCep, error: cepError } = useViaCep(cep);
 
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [address, setAddress] = useState('');
@@ -553,18 +559,23 @@ export default function CreateListing() {
                 PASSO 3 — CONDIÇÃO E DESCRIÇÃO
             ══════════════════════════════════ */}
             {currentStep === 2 && (
-              <View>
-                {/* Estado do item */}
-                <View className="mb-8">
-                  <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">
-                    Estado do item
-                  </Text>
+              <View className="gap-5">
+                {/* Card — Estado do item */}
+                <View className="bg-white rounded-3xl p-5 border border-zinc-100">
+                  <View className="flex-row items-center gap-2 mb-4">
+                    <View className="w-9 h-9 rounded-2xl bg-[#FF692E]/10 items-center justify-center">
+                      <Package size={18} color="#FF692E" strokeWidth={2.2} />
+                    </View>
+                    <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest flex-1">
+                      Estado do item
+                    </Text>
+                  </View>
                   <Controller
                     control={control}
                     name="condition"
                     render={({ field: { onChange, value } }) => (
                       <View
-                        className="gap-3"
+                        className="gap-2.5"
                         accessibilityRole="radiogroup"
                         accessibilityLabel="Estado de conservação"
                       >
@@ -578,25 +589,24 @@ export default function CreateListing() {
                               accessibilityRole="radio"
                               accessibilityState={{ checked: isSelected }}
                               accessibilityLabel={cond}
-                              className={`flex-row items-center px-5 rounded-2xl border-2 ${
+                              className={`flex-row items-center px-4 rounded-2xl border-2 ${
                                 isSelected
-                                  ? 'bg-[#84DCD9]/15 border-[#84DCD9]'
-                                  : 'bg-white border-zinc-100'
+                                  ? 'bg-[#FF692E]/8 border-[#FF692E]'
+                                  : 'bg-[#FDF9F1] border-zinc-100'
                               }`}
-                              style={{ height: 56 }}
+                              style={{ minHeight: 52 }}
                             >
-                              {/* Radio visual */}
                               <View
-                                className={`w-5 h-5 rounded-full border-2 mr-4 items-center justify-center ${
-                                  isSelected ? 'border-[#84DCD9]' : 'border-zinc-300'
+                                className={`w-5 h-5 rounded-full border-2 mr-3.5 items-center justify-center ${
+                                  isSelected ? 'border-[#FF692E]' : 'border-zinc-300'
                                 }`}
                               >
                                 {isSelected && (
-                                  <View className="w-2.5 h-2.5 rounded-full bg-[#84DCD9]" />
+                                  <View className="w-2.5 h-2.5 rounded-full bg-[#FF692E]" />
                                 )}
                               </View>
                               <Text
-                                className={`font-semibold text-sm ${
+                                className={`font-semibold text-sm flex-1 ${
                                   isSelected ? 'text-[#642714]' : 'text-[#8C6D62]'
                                 }`}
                               >
@@ -609,17 +619,22 @@ export default function CreateListing() {
                     )}
                   />
                   {errors.condition && (
-                    <Text className="text-red-500 text-xs mt-2">
+                    <Text className="text-red-500 text-xs mt-3">
                       {errors.condition.message}
                     </Text>
                   )}
                 </View>
 
-                {/* Descrição */}
-                <View>
-                  <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest mb-3">
-                    Mais detalhes
-                  </Text>
+                {/* Card — Mais detalhes */}
+                <View className="bg-white rounded-3xl p-5 border border-zinc-100">
+                  <View className="flex-row items-center gap-2 mb-4">
+                    <View className="w-9 h-9 rounded-2xl bg-[#FF692E]/10 items-center justify-center">
+                      <FileText size={18} color="#FF692E" strokeWidth={2.2} />
+                    </View>
+                    <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest flex-1">
+                      Mais detalhes
+                    </Text>
+                  </View>
                   <Controller
                     control={control}
                     name="description"
@@ -635,22 +650,92 @@ export default function CreateListing() {
                         maxLength={500}
                         accessibilityLabel="Descrição do item"
                         accessibilityHint="Descreva com detalhes o estado e histórico do item"
-                        className={`bg-white pl-5 pt-4 rounded-2xl border-2 shadow-sm text-[#3D2214] ${
+                        className={`bg-[#FDF9F1] pl-4 pr-4 pt-3.5 rounded-2xl border-2 text-[#3D2214] ${
                           errors.description
                             ? 'border-red-400'
-                            : 'border-transparent focus:border-[#FF692E]'
+                            : 'border-zinc-100 focus:border-[#FF692E]'
                         }`}
-                        style={{ height: 140 }}
+                        style={{ minHeight: 132 }}
                       />
                     )}
                   />
                   {errors.description ? (
-                    <Text className="text-red-500 text-xs mt-2">
+                    <Text className="text-red-500 text-xs mt-3">
                       {errors.description.message}
                     </Text>
                   ) : (
-                    <Text className="text-[#B0978E] text-xs mt-2">
+                    <Text className="text-[#B0978E] text-xs mt-3 leading-relaxed">
                       Quanto mais detalhes, menos perguntas você recebe.
+                    </Text>
+                  )}
+                </View>
+
+                {/* Card — CEP */}
+                <View className="bg-white rounded-3xl p-5 border border-zinc-100">
+                  <View className="flex-row items-center gap-2 mb-4">
+                    <View className="w-9 h-9 rounded-2xl bg-[#FF692E]/10 items-center justify-center">
+                      <MapPin size={18} color="#FF692E" strokeWidth={2.2} />
+                    </View>
+                    <Text className="text-[#642714] text-xs font-bold uppercase tracking-widest flex-1">
+                      CEP (opcional)
+                    </Text>
+                  </View>
+
+                  <Input
+                    placeholder="00000-000"
+                    value={cep}
+                    onChangeText={(text) => {
+                      const formatted = text.replace(/\D/g, '').slice(0, 8);
+                      setCep(formatted);
+                    }}
+                    keyboardType="numeric"
+                    maxLength={9}
+                    accessibilityLabel="CEP do local de retirada"
+                    accessibilityHint="Digite o CEP para preencher o endereço automaticamente"
+                    className={`bg-[#FDF9F1] h-14 pl-5 rounded-2xl border-2 text-[#3D2214] ${
+                      cepError
+                        ? 'border-red-400'
+                        : 'border-zinc-100 focus:border-[#FF692E]'
+                    }`}
+                  />
+
+                  {isLoadingCep && (
+                    <View className="mt-4 flex-row items-center gap-3 py-3.5 px-4 rounded-2xl bg-[#FDF9F1] border border-zinc-100">
+                      <ActivityIndicator size="small" color="#FF692E" />
+                      <Search size={18} color="#8C6D62" strokeWidth={2} />
+                      <Text className="text-[#642714] text-sm font-medium flex-1">
+                        Buscando endereço…
+                      </Text>
+                    </View>
+                  )}
+
+                  {addressData && !cepError && (
+                    <View className="mt-4 p-4 rounded-2xl bg-[#FDF9F1] border border-emerald-200/60">
+                      <View className="flex-row items-center gap-2 mb-2">
+                        <CheckCircle2 size={20} color="#059669" strokeWidth={2.25} />
+                        <Text className="text-[#642714] font-bold text-sm">
+                          Endereço encontrado
+                        </Text>
+                      </View>
+                      <Text className="text-[#3D2214] text-sm leading-5">
+                        {addressData.logradouro}
+                        {addressData.complemento && `, ${addressData.complemento}`}
+                      </Text>
+                      <Text className="text-[#8C6D62] text-sm mt-1">
+                        {addressData.bairro} — {addressData.localidade}/{addressData.uf}
+                      </Text>
+                    </View>
+                  )}
+
+                  {cepError && cep.length === 8 && (
+                    <Text className="text-red-500 text-xs mt-3">
+                      CEP não encontrado. Verifique e tente novamente.
+                    </Text>
+                  )}
+
+                  {!cep && (
+                    <Text className="text-[#B0978E] text-xs mt-3 leading-relaxed">
+                      O CEP ajuda a mostrar a localização aproximada do item.
                     </Text>
                   )}
                 </View>

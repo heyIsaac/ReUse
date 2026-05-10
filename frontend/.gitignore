@@ -33,9 +33,13 @@ yarn-error.*
 # local env files — .env.local nunca vai pro git
 .env.local
 .env*.local
+.env.production
 
 # typescript
 *.tsbuildinfo
+
+# Jest
+coverage/
 
 app-example
 

@@ -1,0 +1,77 @@
+name: 🧪 Tests
+
+on:
+  push:
+    branches: [ main, marco, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    branches: [ main, marco, develop ]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  test:
+    name: Jest Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+          cache-dependency-path: 'frontend/yarn.lock'
+
+      - name: 🔧 Install dependencies
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: 🧪 Run tests
+        run: yarn test --coverage --maxWorkers=2
+        env:
+          CI: true
+
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./frontend/coverage/coverage-final.json
+          flags: unittests
+          name: frontend-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: 📈 Coverage Summary
+        if: always()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "## 📊 Test Coverage" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 💬 Comment PR with Coverage
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          lcov-file: ./frontend/coverage/lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          delete-old-comments: true
+
+      - name: ✅ Test Results
+        if: always()
+        run: |
+          echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tests completed! Check the logs above for details." >> $GITHUB_STEP_SUMMARY
