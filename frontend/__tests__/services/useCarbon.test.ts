@@ -9,6 +9,7 @@ import {
   useCarbonImpact,
   useTotalCarbonImpact,
   getCarbonMessage,
+  getCarbonMessagePlain,
   getImpactLevel,
   getCarbonComparison,
 } from '../../src/services/useCarbon';
@@ -125,6 +126,15 @@ describe('getCarbonMessage', () => {
     expect(message).toContain('100kg de CO₂');
     expect(message).toContain('833km');
     expect(message).toContain('🚗💨');
+  });
+});
+
+describe('getCarbonMessagePlain', () => {
+  it('deve repetir números da mensagem curta sem emojis', () => {
+    const data = { co2_kg: 5, trees_equivalent: 0, car_km_equivalent: 42 };
+    const plain = getCarbonMessagePlain(data);
+    expect(plain).toContain('5kg de CO₂');
+    expect(plain).not.toContain('🌱');
   });
 });
 

@@ -116,6 +116,21 @@ export function getCarbonMessage(data: CarbonData): string {
   return `Você economizou ${co2_kg}kg de CO₂ - o mesmo que um carro rodando ${car_km_equivalent}km! 🚗💨`;
 }
 
+/** Mesmo texto de {@link getCarbonMessage}, sem emojis (para UI com ícones Lucide). */
+export function getCarbonMessagePlain(data: CarbonData): string {
+  const { co2_kg, trees_equivalent, car_km_equivalent } = data;
+
+  if (co2_kg < 10) {
+    return `Você economizou ${co2_kg}kg de CO₂!`;
+  }
+
+  if (co2_kg < 50) {
+    return `Você economizou ${co2_kg}kg de CO₂ — equivalente a ${trees_equivalent} árvores!`;
+  }
+
+  return `Você economizou ${co2_kg}kg de CO₂ — o mesmo que um carro rodando ${car_km_equivalent} km!`;
+}
+
 /**
  * Retorna nível de impacto (bronze, prata, ouro, platina)
  */

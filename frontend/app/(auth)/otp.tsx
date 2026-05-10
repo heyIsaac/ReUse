@@ -117,10 +117,10 @@ export default function OtpScreen() {
           </TouchableOpacity>
 
           <Text variant="h2" className="text-zinc-900 border-none pb-0 mb-2">
-            Enter the Code
+            Digite o código
           </Text>
           <Text className="text-base text-zinc-500 mb-2">
-            A verification code has been sent to
+            Enviamos um código de verificação para
           </Text>
           <Text className="text-base font-bold text-zinc-900 mb-10">
             {email || "email@desconhecido.com"}
@@ -170,11 +170,11 @@ export default function OtpScreen() {
 
           <View className="flex-row justify-center items-center mb-10 h-14">
             <Text className="text-zinc-500 mr-1">
-              Didn&apos;t receive code?
+              Não recebeu o código?
             </Text>
             <TouchableOpacity activeOpacity={0.7} onPress={handleResend}>
               <Text className="text-emerald-600 font-bold underline">
-                Resend
+                Reenviar
               </Text>
             </TouchableOpacity>
           </View>

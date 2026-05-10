@@ -1,18 +1,24 @@
 import { Text } from '@/components/ui/text';
 import { useUserProfile } from '@/src/hooks/useUserProfile';
 import { useGetListings } from '@/src/services/useListings';
+import { useTotalCarbonImpact } from '@/src/services/useCarbon';
 import { Leaf, TrendingUp } from 'lucide-react-native';
 import React from 'react';
 import { View } from 'react-native';
-
-const KG_PER_LISTING = 2.5;
 
 export function ImpactCard() {
   const { data: user } = useUserProfile();
   const { data: listings } = useGetListings();
 
-  const myCount = listings?.filter(l => l.owner?.id === user?.id).length ?? 0;
-  const impact = (myCount * KG_PER_LISTING).toFixed(1).replace('.0', '');
+  const myListings = listings?.filter(l => l.owner?.id === user?.id) ?? [];
+  const myCount = myListings.length;
+  const donations = myListings.map(listing => ({
+    category: listing.category?.name || 'default',
+    quantity: 1,
+  }));
+  const { data: carbonData } = useTotalCarbonImpact(donations);
+  const impact =
+    carbonData?.co2_kg.toString() ?? (myCount * 2.5).toFixed(1).replace('.0', '');
 
   return (
     <View className="mb-10">
