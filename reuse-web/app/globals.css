@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  
+  --color-accent-orange: var(--accent-orange);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-rose: var(--accent-rose);
+  
+  --color-badge-new: var(--badge-new);
+  --color-badge-used: var(--badge-used);
+  --color-badge-marks: var(--badge-marks);
+  
+  --color-border: var(--border);
+  --font-sans: var(--font-sans);
+  
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* ReUse! Identity Tokens */
+  --background: hsl(40, 60%, 97%); /* #FDF9F1 Creme Suave */
+  --card: hsl(0, 0%, 100%); /* #FFFFFF Branco */
+  
+  --foreground: hsl(14, 67%, 24%); /* #642714 Marrom Escuro */
+  --muted-foreground: hsl(16, 18%, 47%); /* #8C6D62 Marrom Médio */
+  
+  --primary: hsl(17, 100%, 59%); /* #FF692E Laranja Vibrante */
+  --primary-hover: hsl(17, 78%, 52%); /* #E55A25 Laranja Escuro */
+  --primary-foreground: hsl(0, 0%, 100%); /* Branco */
+  
+  --border: hsl(40, 23%, 88%); /* #E8E2D9 Marrom super claro (Bordas) */
+
+  /* Badges específicas */
+  --badge-new: hsl(178, 54%, 69%); /* #84DCD9 */
+  --badge-used: hsl(38, 93%, 55%); /* #F8A720 */
+  --badge-marks: hsl(16, 18%, 47%); /* #8C6D62 */
+  
+  /* Fallbacks para acentos antigos se houver, mas adaptados pro tom amigável */
+  --accent-orange: hsl(17, 100%, 59%);
+  --accent-purple: hsl(250, 48%, 48%);
+  --accent-rose: hsl(340, 80%, 65%);
+
+  --radius: 0.75rem;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+}
+
+/* Utilities adicionais que podem facilitar */
+@layer utilities {
+  .flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

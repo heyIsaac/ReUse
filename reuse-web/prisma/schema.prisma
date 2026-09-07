@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String?
+  email     String   @unique
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  listings  Listing[]
+  favorites Favorite[]
+
+  @@map("users")
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  
+  listings  Listing[]
+
+  @@map("categories")
+}
+
+model Listing {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  condition   String
+  price       Float?   // Added price as the prompt mentioned it for "produtos"
+  images      String[] // Prisma PostgreSQL supports array of strings
+  latitude    Float?
+  longitude   Float?
+  address     String?
+  createdAt   DateTime @default(now())
+
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  categoryId Int
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  favorites  Favorite[]
+
+  @@map("listings")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  listingId Int
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@map("favorites")
+}
