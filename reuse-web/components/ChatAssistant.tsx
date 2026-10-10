@@ -80,7 +80,7 @@ export default function ChatAssistant() {
       {
         id: 'welcome',
         role: 'assistant',
-        content: 'Olá! Sou o assistente virtual do ReUse. Posso te ajudar a cadastrar anúncios, buscar produtos, gerenciar seus favoritos ou tirar dúvidas sobre a plataforma. O que deseja fazer hoje?',
+        content: 'Olá! Sou o assistente virtual do ReUse. Posso te ajudar com perguntas e realizar automações diretamente por aqui. Para testar minhas habilidades, experimente pedir coisas como:\n\n- **"Criar anúncio de teste"** (Gera um produto no banco de dados)\n- **"Excluir meu último anúncio"** (Apaga do banco de dados)\n- **"Quais produtos eu já anunciei?"** (Consulta a base)\n- **"Como favoritar um produto?"** (Guia passo a passo)\n\nO que deseja fazer hoje?',
         timestamp: new Date(),
       }
     ]);
@@ -234,13 +234,6 @@ export default function ChatAssistant() {
         </div>
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
-            className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-            title={isVoiceEnabled ? "Desativar voz" : "Ativar voz"}
-          >
-            {isVoiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </button>
-          <button 
             onClick={clearChat}
             className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
             title="Limpar conversa"
@@ -313,34 +306,13 @@ export default function ChatAssistant() {
           className="flex items-end gap-2"
         >
           <div className="relative flex-1">
-            <textarea
+            <input
+              type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(inputValue);
-                }
-              }}
               placeholder="Digite sua mensagem ou pergunte algo..."
-              className="w-full resize-none rounded-xl border border-border bg-muted/50 pl-3 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              rows={1}
-              style={{ minHeight: '44px', maxHeight: '120px' }}
+              className="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
-            {recognitionRef.current && (
-              <button
-                type="button"
-                onClick={toggleListening}
-                className={`absolute right-2 bottom-2.5 p-1.5 rounded-lg transition-colors ${
-                  isListening 
-                    ? 'bg-destructive/10 text-destructive animate-pulse' 
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-                title={isListening ? "Parar gravação" : "Falar no microfone"}
-              >
-                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-              </button>
-            )}
           </div>
           <button
             type="submit"
