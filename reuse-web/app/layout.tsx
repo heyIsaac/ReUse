@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Compass, Heart, User, PlusCircle } from 'lucide-react';
 import { Toaster } from 'sonner';
+import ChatAssistant from '@/components/ChatAssistant';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -93,6 +94,7 @@ export default function RootLayout({
         <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8 flex flex-col pb-24 md:pb-8">
           {children}
         </main>
+        <ChatAssistant />
       </body>
     </html>
   );
